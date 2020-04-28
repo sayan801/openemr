@@ -3,24 +3,11 @@
  *
  * application logic specific to the OnsitePortalActivity listing pageAudit
  *
- * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- *
- * LICENSE: This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package OpenEMR
- * @author Jerry Padgett <sjpadgett@gmail.com>
- * @link http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 var pageAudit = {
@@ -65,7 +52,7 @@ var pageAudit = {
 		pageAudit.fetchParams = params;
 
 		if (pageAudit.fetchInProgress) {
-			if (console) console.log('supressing fetch because it is already in progress');
+			if (console) console.log('pageAudit supressing fetch because it is already in progress');
 		}
 
 		pageAudit.fetchInProgress = true;
@@ -80,6 +67,7 @@ var pageAudit = {
 					pageAudit.getAudit(m);
 				//}
 				pageAudit.fetchInProgress = false;
+                console.log('Activity fetched!');
 			},
 
 			error: function(m, r) {

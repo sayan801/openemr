@@ -1,4 +1,5 @@
 <?php
+
 //our api for 3rd party developers
 require_once(dirname(__FILE__) . "/../interface/globals.php");
 
@@ -11,7 +12,6 @@ function formHeader($title = "My Form")
     ?>
     <html>
     <head>
-<?php html_header_show();?>
     <link rel=stylesheet href="<?php echo $GLOBALS['css_header']?>" type="text/css">
     <title><?php echo text($title); ?></title>
     </head>
@@ -44,9 +44,8 @@ function formSubmit($tableName, $values, $id, $authorized = "0")
 
                 BillingUtilities::addBilling(date("Ymd"), 'CPT4', $code_array[0], $code_array[1], $_SESSION['pid'], $authorized, $_SESSION['authUserID']);
             }
-        } //case where key looks like "[a-zA-Z]*diagnosis[0-9]" which is special, it is used to auto add ICD codes
-
-        elseif (strpos($key, "diagnosis") == (strlen($key) -10) && !(strpos($key, "diagnosis")=== false )) {
+        } elseif (strpos($key, "diagnosis") == (strlen($key) - 10) && !(strpos($key, "diagnosis") === false )) {
+            //case where key looks like "[a-zA-Z]*diagnosis[0-9]" which is special, it is used to auto add ICD codes
             //icd auto add ICD9-CM
             if (!empty($value)) {
                 $code_array = explode(" ", $value, 2);

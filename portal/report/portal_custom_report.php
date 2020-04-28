@@ -1,31 +1,25 @@
 <?php
-use ESign\Api;
 
 /**
- *
  * Patient custom report.
  *
- * LICENSE: This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
- *
- * @package OpenEMR
- * @author  Brady Miller <brady@sparmy.com>
- * @author  Ken Chapple <ken@mi-squared.com>
- * @author  Tony McCormick <tony@mi-squared.com>
- * @link    http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @author    Brady Miller <brady@sparmy.com>
+ * @author    Ken Chapple <ken@mi-squared.com>
+ * @author    Tony McCormick <tony@mi-squared.com>
+ * @copyright Copyright (c) 2016-2020 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-session_start();
+
+// Will start the (patient) portal OpenEMR session/cookie.
+require_once(dirname(__FILE__) . "/../../src/Common/Session/SessionUtil.php");
+OpenEMR\Common\Session\SessionUtil::portalSessionStart();
 
 //landing page definition -- where to go if something goes wrong
-$landingpage = "../index.php?site=".$_SESSION['site_id'];
+$landingpage = "../index.php?site=" . urlencode($_SESSION['site_id']);
 //
 
 // kick out if patient not authenticated
@@ -33,8 +27,8 @@ if (isset($_SESSION['pid']) && isset($_SESSION['patient_portal_onsite_two'])) {
     $pid = $_SESSION['pid'];
     $user = $_SESSION['sessionUser'];
 } else {
-    session_destroy();
-    header('Location: '.$landingpage.'&w');
+    OpenEMR\Common\Session\SessionUtil::portalSessionCookieDestroy();
+    header('Location: ' . $landingpage . '&w');
     exit;
 }
 
@@ -46,17 +40,23 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/pnotes.inc");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/options.inc.php");
-require_once("$srcdir/acl.inc");
 require_once("$srcdir/lists.inc");
 require_once("$srcdir/report.inc");
 require_once("$srcdir/classes/Document.class.php");
 require_once("$srcdir/classes/Note.class.php");
 require_once(dirname(__file__) . "/../../custom/code_types.inc.php");
-require_once $GLOBALS['srcdir'].'/ESign/Api.php';
+require_once $GLOBALS['srcdir'] . '/ESign/Api.php';
 require_once($GLOBALS["include_root"] . "/orders/single_order_results.inc.php");
 if ($GLOBALS['gbl_portal_cms_enable']) {
     require_once($GLOBALS["include_root"] . "/cmsportal/portal.inc.php");
 }
+require_once($GLOBALS['fileroot'] . "/controllers/C_Document.class.php");
+
+use ESign\Api;
+use Mpdf\Mpdf;
+
+$staged_docs = array();
+$archive_name = '';
 
 // For those who care that this is the patient report.
 $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
@@ -64,26 +64,39 @@ $GLOBALS['PATIENT_REPORT_ACTIVE'] = true;
 $PDF_OUTPUT = empty($_POST['pdf']) ? 0 : intval($_POST['pdf']);
 
 if ($PDF_OUTPUT) {
-    require_once("$srcdir/html2pdf/vendor/autoload.php");
-    $pdf = new HTML2PDF(
-        $GLOBALS['pdf_layout'],
-        $GLOBALS['pdf_size'],
-        $GLOBALS['pdf_language'],
-        true, // default unicode setting is true
-        'UTF-8', // default encoding setting is UTF-8
-        array($GLOBALS['pdf_left_margin'],$GLOBALS['pdf_top_margin'],$GLOBALS['pdf_right_margin'],$GLOBALS['pdf_bottom_margin'])
+    $config_mpdf = array(
+        'tempDir' => $GLOBALS['MPDF_WRITE_DIR'],
+        'mode' => $GLOBALS['pdf_language'],
+        'format' => $GLOBALS['pdf_size'],
+        'default_font_size' => '9',
+        'default_font' => 'dejavusans',
+        'margin_left' => $GLOBALS['pdf_left_margin'],
+        'margin_right' => $GLOBALS['pdf_right_margin'],
+        'margin_top' => $GLOBALS['pdf_top_margin'],
+        'margin_bottom' => $GLOBALS['pdf_bottom_margin'],
+        'margin_header' => '',
+        'margin_footer' => '',
+        'orientation' => $GLOBALS['pdf_layout'],
+        'shrink_tables_to_fit' => 1,
+        'use_kwt' => true,
+        'autoScriptToLang' => true,
+        'keep_table_proportions' => true
     );
+    $pdf = new mPDF($config_mpdf);
+    if ($_SESSION['language_direction'] == 'rtl') {
+        $pdf->SetDirectionality('rtl');
+    }
     ob_start();
 }
 
 // get various authorization levels
-$auth_notes_a  = true; //acl_check('encounters', 'notes_a');
-$auth_notes    = true; //acl_check('encounters', 'notes');
-$auth_coding_a = true; //acl_check('encounters', 'coding_a');
-$auth_coding   = true; //acl_check('encounters', 'coding');
-$auth_relaxed  = true; //acl_check('encounters', 'relaxed');
-$auth_med      = true; //acl_check('patients'  , 'med');
-$auth_demo     = true; //acl_check('patients'  , 'demo');
+$auth_notes_a  = true; //AclMain::aclCheckCore('encounters', 'notes_a');
+$auth_notes    = true; //AclMain::aclCheckCore('encounters', 'notes');
+$auth_coding_a = true; //AclMain::aclCheckCore('encounters', 'coding_a');
+$auth_coding   = true; //AclMain::aclCheckCore('encounters', 'coding');
+$auth_relaxed  = true; //AclMain::aclCheckCore('encounters', 'relaxed');
+$auth_med      = true; //AclMain::aclCheckCore('patients'  , 'med');
+$auth_demo     = true; //AclMain::aclCheckCore('patients'  , 'demo');
 
 $esignApi = new Api();
 
@@ -103,7 +116,8 @@ function getContent()
 {
     global $web_root, $webserver_root;
     $content = ob_get_clean();
-  // Fix a nasty html2pdf bug - it ignores document root!
+    // Fix a nasty html2pdf bug - it ignores document root!
+    // TODO - now use mPDF, so should test if still need this fix
     $i = 0;
     $wrlen = strlen($web_root);
     $wsrlen = strlen($webserver_root);
@@ -113,8 +127,10 @@ function getContent()
             break;
         }
 
-        if (substr($content, $i+6, $wrlen) === $web_root &&
-        substr($content, $i+6, $wsrlen) !== $webserver_root) {
+        if (
+            substr($content, $i + 6, $wrlen) === $web_root &&
+            substr($content, $i + 6, $wsrlen) !== $webserver_root
+        ) {
             $content = substr($content, 0, $i + 6) . $webserver_root . substr($content, $i + 6 + $wrlen);
         }
     }
@@ -124,7 +140,7 @@ function getContent()
 
 function postToGet($arin)
 {
-    $getstring="";
+    $getstring = "";
     foreach ($arin as $key => $val) {
         if (is_array($val)) {
             foreach ($val as $k => $v) {
@@ -136,6 +152,43 @@ function postToGet($arin)
     }
 
     return $getstring;
+}
+
+function report_basename($pid)
+{
+    $ptd = getPatientData($pid, "fname,lname");
+    // escape names for pesky periods hyphen etc.
+    $esc = $ptd['fname'] . '_' . $ptd['lname'];
+    $esc = str_replace(array('.', ',', ' '), '', $esc);
+    $fn = basename_international(strtolower($esc . '_' . $pid . '_' . xl('report')));
+
+    return array('base' => $fn, 'fname' => $ptd['fname'], 'lname' => $ptd['lname']);
+}
+
+function zip_content($source, $destination, $content = '', $create = true)
+{
+    if (!extension_loaded('zip')) {
+        return false;
+    }
+
+    $zip = new ZipArchive();
+    if ($create) {
+        if (!$zip->open($destination, ZipArchive::CREATE)) {
+            return false;
+        }
+    } else {
+        if (!$zip->open($destination, ZipArchive::OVERWRITE)) {
+            return false;
+        }
+    }
+
+    if (is_file($source) === true) {
+        $zip->addFromString(basename($source), file_get_contents($source));
+    } elseif (!empty($content)) {
+        $zip->addFromString(basename($source), $content);
+    }
+
+    return $zip->close();
 }
 ?>
 
@@ -155,20 +208,22 @@ function postToGet($arin)
 
 <style>
 
-.h3, h3 {
+.h3,
+h3 {
     font-size: 20px;
 }
-.report_search_div{
+.report_search_div {
 font-size: 20px !important;
-font-style:bold;
+font-style: bold;
 }
 .label {
-color:black;
+color: black;
 }/*
 .groupname {
 color:green;
 }*/
-input[type="checkbox"], input[type="radio"] {
+input[type="checkbox"],
+input[type="radio"] {
     margin: 0 5px 5px;
     line-height: normal;
 }
@@ -177,14 +232,15 @@ input[type="checkbox"], input[type="radio"] {
 <?php if (!$PDF_OUTPUT) { ?>
 <link rel="stylesheet" type="text/css" href="<?php echo $GLOBALS['webroot'] ?>/library/ESign/css/esign_report.css?v=<?php echo $v_js_includes; ?>" />
 <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/js/SearchHighlight.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript">var $j = jQuery.noConflict();</script>
+    <!-- Unclear where a conflict occurs but if jquery is already in scope then !!!! removed noconflict sjp 12-1-2019-->
+<script>var $j = '$';</script>
 
-<?php // if the track_anything form exists, then include the styling
-if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { ?>
+    <?php // if the track_anything form exists, then include the styling
+    if (file_exists(dirname(__FILE__) . "/../../forms/track_anything/style.css")) { ?>
  <link rel="stylesheet" href="<?php echo $GLOBALS['web_root']?>/interface/forms/track_anything/style.css?v=<?php echo $v_js_includes; ?>" type="text/css">
-<?php  } ?>
+    <?php  } ?>
 
-<script type="text/javascript">
+<script>
 
   // Code for search & Highlight
   function reset_highlight(form_id,form_dir,class_name) { // Removes <span class='hilite' id=''>VAL</span> with VAL
@@ -499,7 +555,7 @@ if ($printable) {
   *******************************************************************/
     $titleres = getPatientData($pid, "fname,lname,providerID,DATE_FORMAT(DOB,'%m/%d/%Y') as DOB_TS");
     if ($_SESSION['pc_facility']) {
-        $sql = "select * from facility where id=" . $_SESSION['pc_facility'];
+        $sql = "select * from facility where id=" . add_escape_custom($_SESSION['pc_facility']);
     } else {
         $sql = "SELECT * FROM facility ORDER BY billing_location DESC LIMIT 1";
     }
@@ -512,101 +568,39 @@ if ($printable) {
         $facility = $results->fields;
     }
 
-  // Setup Headers and Footers for html2PDF only Download
-  // in HTML view it's just one line at the top of page 1
-    echo '<page_header style="text-align:right;"> ' . xlt("PATIENT") . ':' . text($titleres['lname']) . ', ' . text($titleres['fname']) . ' - ' . $titleres['DOB_TS'] . '</page_header>    ';
+    // Setup Headers and Footers for mPDF only Download
+    // in HTML view it's just one line at the top of page 1
+    echo '<page_header style="text-align:right;"> ' . xlt("PATIENT") . ':' . text($titleres['lname']) . ', ' . text($titleres['fname']) . ' - ' . text($titleres['DOB_TS']) . '</page_header>    ';
     echo '<page_footer style="text-align:right;">' . xlt('Generated on') . ' ' . text(oeFormatShortDate()) . ' - ' . text($facility['name']) . ' ' . text($facility['phone']) . '</page_footer>';
 
     // Use logo if it exists as 'practice_logo.gif' in the site dir
-  // old code used the global custom dir which is no longer a valid
+    // old code used the global custom dir which is no longer a valid
     $practice_logo = "$OE_SITE_DIR/images/practice_logo.gif";
     if (file_exists($practice_logo)) {
         echo "<img src='$practice_logo' align='left'><br />\n";
     }
     ?>
-    <h2><?php echo $facility['name'] ?></h2>
-<?php echo $facility['street'] ?><br>
-<?php echo $facility['city'] ?>, <?php echo $facility['state'] ?> <?php echo $facility['postal_code'] ?><br clear='all'>
-<?php echo $facility['phone'] ?><br>
+    <h2><?php echo text($facility['name']); ?></h2>
+    <?php echo text($facility['street']); ?><br />
+    <?php echo text($facility['city']); ?>, <?php echo text($facility['state']); ?> <?php echo text($facility['postal_code']); ?><br clear='all'>
+    <?php echo $facility['phone'] ?><br />
 
-<a href="javascript:window.close();"><span class='title'><?php echo $titleres['fname'] . " " . $titleres['lname']; ?></span></a><br>
-<span class='text'><?php xl('Generated on', 'e'); ?>: <?php echo text(oeFormatShortDate()); ?></span>
-<br><br>
+<a href="javascript:window.close();"><span class='title'><?php echo text($titleres['fname']) . " " . text($titleres['lname']); ?></span></a><br />
+<span class='text'><?php echo xlt('Generated on'); ?>: <?php echo text(oeFormatShortDate()); ?></span>
+<br /><br />
+
+    <?php
+} else { // not printable ?>
+    <a href="./report/portal_custom_report.php?printable=1&<?php echo postToGet($ar); ?>" class='link_submit' target='new'>
+        <button><?php echo xlt('Printable Version'); ?></button>
+    </a><br />
+<?php } // end not printable ?>
 
 <?php
-} else { // not printable
-    ?>
-
-    <!-- old href was here
-    <br><br> -->
-
-    <a href="./report/portal_custom_report.php?printable=1&<?php print postToGet($ar); ?>" class='link_submit' target='new' onclick='top.restoreSession()'>
-<button><?php xl('Printable Version', 'e'); ?></button>
-</a><br>
-<!--<div class="report_search_bar" style="width:100%;" id="search_options">
-  <table style="width:100%;">
-    <tr>
-  <td>
-    <input type="text" onKeyUp="clear_last_visit();remove_mark_all();find_all();" name="search_element" id="search_element" style="width:180px;"/>
-  </td>
-  <td>
-     <a class="css_button" onClick="clear_last_visit();remove_mark_all();find_all();" ><span><?php //echo xlt('Find'); ?></span></a>
-  </td>
-  <td>
-     <a class="css_button" onClick="next_prev('prev');" ><span><?php //echo xlt('Prev'); ?></span></a>
-  </td>
-  <td>
-     <a class="css_button" onClick="next_prev('next');" ><span><?php //echo xlt('Next'); ?></span></a>
-  </td>
-  <td>
-    <input type="checkbox" onClick="clear_last_visit();remove_mark_all();find_all();" name="search_case" id="search_case" />
-  </td>
-  <td>
-    <span><?php //echo xlt('Match case'); ?></span>
-  </td>
-  <td style="padding-left:10px;">
-    <span class="text"><b><?php //echo xlt('Search In'); ?>:</b></span>
-    <br>
-    <?php
-    /*         $form_id_arr = array();
-    $form_dir_arr = array();
-    $last_key ='';
-    //ksort($ar);
-    foreach ($ar as $key_search => $val_search) {
-        if ($key_search == 'pdf' || $key_search == '' ) continue;
-        if (($auth_notes_a || $auth_notes || $auth_coding_a || $auth_coding || $auth_med || $auth_relaxed)) {
-                    preg_match('/^(.*)_(\d+)$/', $key_search, $res_search);
-                    $form_id_arr[] = add_escape_custom($res_search[2]);
-                     $form_dir_arr[] = add_escape_custom($res_search[1]);
-        }
-    }
-    //echo json_encode(json_encode($array_key_id));
-    if(sizeof($form_id_arr)>0){
-      $query = "SELECT DISTINCT(form_name),formdir FROM forms WHERE form_id IN ( '".implode("','",$form_id_arr)."') AND formdir IN ( '".implode("','",$form_dir_arr)."')";
-      $arr = sqlStatement($query);
-      echo "<select multiple size='4' style='width:300px;' id='forms_to_search' onchange='clear_last_visit();remove_mark_all();find_all();' >";
-      while($res_forms_ids = sqlFetchArray($arr)){
-        echo "<option value='".attr($res_forms_ids['formdir'])."' selected>".text($res_forms_ids['form_name'])."</option>";
-      }
-      echo "</select>";
-    } */
-    ?>
-      </td>
-      <td style="padding-left:10px;;width:30%;">
-    <span id ='alert_msg' style='color:red;'></span>
-      </td>
-    </tr>
-  </table>
-    </div>-->
-    <?php
-} // end not printable ?>
-
-<?php
-
 // include ALL form's report.php files
-$inclookupres = sqlStatement("select distinct formdir from forms where pid = '$pid' AND deleted=0");
+$inclookupres = sqlStatement("select distinct formdir from forms where pid = ? AND deleted=0", [$pid]);
 while ($result = sqlFetchArray($inclookupres)) {
-  // include_once("{$GLOBALS['incdir']}/forms/" . $result{"formdir"} . "/report.php");
+  // include_once("{$GLOBALS['incdir']}/forms/" . $result["formdir"] . "/report.php");
     $formdir = $result['formdir'];
     if (substr($formdir, 0, 3) == 'LBF') {
         include_once($GLOBALS['incdir'] . "/forms/LBF/report.php");
@@ -632,7 +626,7 @@ foreach ($ar as $key => $val) {
         if ($val == "demographics") {
             echo "<hr />";
             echo "<div class='text demographics' id='DEM'>\n";
-            print "<h1>".xl('Patient Data').":</h1>";
+            print "<h1>" . xlt('Patient Data') . ":</h1>";
             // printRecDataOne($patient_data_array, getRecPatientData ($pid), $N);
             $result1 = getPatientData($pid);
             $result2 = getEmployerData($pid);
@@ -643,8 +637,8 @@ foreach ($ar as $key => $val) {
         } elseif ($val == "history") {
             echo "<hr />";
             echo "<div class='text history' id='HIS'>\n";
-            //if (acl_check('patients', 'med')) {
-                print "<h1>".xl('History Data').":</h1>";
+            //if (AclMain::aclCheckCore('patients', 'med')) {
+                print "<h1>" . xlt('History Data') . ":</h1>";
                 // printRecDataOne($history_data_array, getRecHistoryData ($pid), $N);
                 $result1 = getHistoryData($pid);
                 echo "   <table>\n";
@@ -654,27 +648,27 @@ foreach ($ar as $key => $val) {
             echo "</div>";
 
             // } elseif ($val == "employer") {
-            //   print "<br><span class='bold'>".xl('Employer Data').":</span><br>";
+            //   print "<br /><span class='bold'>".xl('Employer Data').":</span><br />";
             //   printRecDataOne($employer_data_array, getRecEmployerData ($pid), $N);
         } elseif ($val == "insurance") {
             echo "<hr />";
             echo "<div class='text insurance'>";
-            echo "<h1>".xl('Insurance Data').":</h1>";
-            print "<br><span class=bold>".xl('Primary Insurance Data').":</span><br>";
+            echo "<h1>" . xlt('Insurance Data') . ":</h1>";
+            print "<br /><span class='font-weight-bold'>" . xlt('Primary Insurance Data') . ":</span><br />";
             printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "primary"), $N);
-            print "<span class=bold>".xl('Secondary Insurance Data').":</span><br>";
+            print "<span class='font-weight-bold'>" . xlt('Secondary Insurance Data') . ":</span><br />";
             printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "secondary"), $N);
-            print "<span class=bold>".xl('Tertiary Insurance Data').":</span><br>";
+            print "<span class='font-weight-bold'>" . xlt('Tertiary Insurance Data') . ":</span><br />";
             printRecDataOne($insurance_data_array, getRecInsuranceData($pid, "tertiary"), $N);
             echo "</div>";
         } elseif ($val == "billing") {
             echo "<hr />";
             echo "<div class='text billing'>";
-            print "<h1>".xl('Billing Information').":</h1>";
-            if (count($ar['newpatient']) > 0) {
+            print "<h1>" . xlt('Billing Information') . ":</h1>";
+            if ((!empty($ar['newpatient'])) && (count($ar['newpatient']) > 0)) {
                 $billings = array();
                 echo "<table>";
-                echo "<tr><td width='400' class='bold'>Code</td><td class='bold'>".xl('Fee')."</td></tr>\n";
+                echo "<tr><td width='400' class='font-weight-bold'>" . xlt('Code') . "</td><td class='font-weight-bold'>" . xlt('Fee') . "</td></tr>\n";
                 $total = 0.00;
                 $copays = 0.00;
                 foreach ($ar['newpatient'] as $be) {
@@ -683,11 +677,11 @@ foreach ($ar as $key => $val) {
                     $billings[] = $billing;
                     foreach ($billing as $b) {
                         echo "<tr>\n";
-                        echo "<td class=text>";
-                        echo $b['code_type'] . ":\t" . $b['code'] . "&nbsp;". $b['modifier'] . "&nbsp;&nbsp;&nbsp;" . $b['code_text'] . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+                        echo "<td class='text'>";
+                        echo text($b['code_type']) . ":\t" . text($b['code']) . "&nbsp;" . text($b['modifier']) . "&nbsp;&nbsp;&nbsp;" . text($b['code_text']) . "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                         echo "</td>\n";
-                        echo "<td class=text>";
-                        echo oeFormatMoney($b['fee']);
+                        echo "<td class='text'>";
+                        echo text(oeFormatMoney($b['fee']));
                         echo "</td>\n";
                         echo "</tr>\n";
                         $total += $b['fee'];
@@ -698,9 +692,9 @@ foreach ($ar as $key => $val) {
                 }
 
                 echo "<tr><td>&nbsp;</td></tr>";
-                echo "<tr><td class=bold>".xl('Sub-Total')."</td><td class=text>" . oeFormatMoney($total + abs($copays)) . "</td></tr>";
-                echo "<tr><td class=bold>".xl('Paid')."</td><td class=text>" . oeFormatMoney(abs($copays)) . "</td></tr>";
-                echo "<tr><td class=bold>".xl('Total')."</td><td class=text>" . oeFormatMoney($total) . "</td></tr>";
+                echo "<tr><td class='font-weight-bold'>" . xlt('Sub-Total') . "</td><td class='text'>" . text(oeFormatMoney($total + abs($copays))) . "</td></tr>";
+                echo "<tr><td class='font-weight-bold'>" . xlt('Paid') . "</td><td class='text'>" . text(oeFormatMoney(abs($copays))) . "</td></tr>";
+                echo "<tr><td class='font-weight-bold'>" . xlt('Total') . "</td><td class='text'>" . text(oeFormatMoney($total)) . "</td></tr>";
                 echo "</table>";
                 echo "<pre>";
                 //print_r($billings);
@@ -715,50 +709,50 @@ foreach ($ar as $key => $val) {
 
         } elseif ($val == "allergies") {
 
-            print "<span class=bold>Patient Allergies:</span><br>";
+            print "<span class='font-weight-bold'>Patient Allergies:</span><br />";
             printListData($pid, "allergy", "1");
 
         } elseif ($val == "medications") {
 
-            print "<span class=bold>Patient Medications:</span><br>";
+            print "<span class='font-weight-bold'>Patient Medications:</span><br />";
             printListData($pid, "medication", "1");
 
         } elseif ($val == "medical_problems") {
 
-            print "<span class=bold>Patient Medical Problems:</span><br>";
+            print "<span class='font-weight-bold'>Patient Medical Problems:</span><br />";
             printListData($pid, "medical_problem", "1");
 
     ****/
         } elseif ($val == "immunizations") {
-            //if (acl_check('patients', 'med')) {
+            //if (AclMain::aclCheckCore('patients', 'med')) {
                 echo "<hr />";
                 echo "<div class='text immunizations'>\n";
-                print "<h1>".xl('Patient Immunization').":</h1>";
-                $sql = "select i1.immunization_id, i1.administered_date, substring(i1.note,1,20) as immunization_note, c.code_text_short ".
-                   " from immunizations i1 ".
-                   " left join code_types ct on ct.ct_key = 'CVX' ".
-                   " left join codes c on c.code_type = ct.ct_id AND i1.cvx_code = c.code ".
-                   " where i1.patient_id = '$pid' and i1.added_erroneously = 0 ".
+                print "<h1>" . xlt('Patient Immunization') . ":</h1>";
+                $sql = "select i1.immunization_id, i1.administered_date, substring(i1.note,1,20) as immunization_note, c.code_text_short " .
+                   " from immunizations i1 " .
+                   " left join code_types ct on ct.ct_key = 'CVX' " .
+                   " left join codes c on c.code_type = ct.ct_id AND i1.cvx_code = c.code " .
+                   " where i1.patient_id = ? and i1.added_erroneously = 0 " .
                    " order by administered_date desc";
-                $result = sqlStatement($sql);
-            while ($row=sqlFetchArray($result)) {
+                $result = sqlStatement($sql, [$pid]);
+            while ($row = sqlFetchArray($result)) {
               // Figure out which name to use (ie. from cvx list or from the custom list)
                 if ($GLOBALS['use_custom_immun_list']) {
-                     $vaccine_display = generate_display_field(array('data_type'=>'1','list_id'=>'immunizations'), $row['immunization_id']);
+                     $vaccine_display = generate_display_field(array('data_type' => '1','list_id' => 'immunizations'), $row['immunization_id']);
                 } else {
                     if (!empty($row['code_text_short'])) {
-                        $vaccine_display = htmlspecialchars(xl($row['code_text_short']), ENT_NOQUOTES);
+                        $vaccine_display = xlt($row['code_text_short']);
                     } else {
-                         $vaccine_display = generate_display_field(array('data_type'=>'1','list_id'=>'immunizations'), $row['immunization_id']);
+                         $vaccine_display = generate_display_field(array('data_type' => '1','list_id' => 'immunizations'), $row['immunization_id']);
                     }
                 }
 
-                echo $row['administered_date'] . " - " . $vaccine_display;
+                echo text($row['administered_date']) . " - " . $vaccine_display;
                 if ($row['immunization_note']) {
-                     echo " - " . $row['immunization_note'];
+                     echo " - " . text($row['immunization_note']);
                 }
 
-                echo "<br>\n";
+                echo "<br />\n";
             }
 
                 echo "</div>\n";
@@ -768,25 +762,25 @@ foreach ($ar as $key => $val) {
         } elseif ($val == "batchcom") {
             echo "<hr />";
             echo "<div class='text transactions'>\n";
-            print "<h1>".xl('Patient Communication sent').":</h1>";
-            $sql="SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id='$pid'";
+            print "<h1>" . xlt('Patient Communication sent') . ":</h1>";
+            $sql = "SELECT concat( 'Messsage Type: ', batchcom.msg_type, ', Message Subject: ', batchcom.msg_subject, ', Sent on:', batchcom.msg_date_sent ) AS batchcom_data, batchcom.msg_text, concat( users.fname, users.lname ) AS user_name FROM `batchcom` JOIN `users` ON users.id = batchcom.sent_by WHERE batchcom.patient_id=?";
             // echo $sql;
-            $result = sqlStatement($sql);
-            while ($row=sqlFetchArray($result)) {
-                echo $row{'batchcom_data'}.", By: ".$row{'user_name'}."<br>Text:<br> ".$row{'msg_txt'}."<br>\n";
+            $result = sqlStatement($sql, [$pid]);
+            while ($row = sqlFetchArray($result)) {
+                echo text($row['batchcom_data']) . ", " . xlt('By') . ": " . text($row['user_name']) . "<br />" . xlt('Text') . ":<br /> " . text($row['msg_txt']) . "<br />\n";
             }
 
             echo "</div>\n";
         } elseif ($val == "notes") {
             echo "<hr />";
             echo "<div class='text notes'>\n";
-            print "<h1>".xl('Patient Notes').":</h1>";
+            print "<h1>" . xlt('Patient Notes') . ":</h1>";
             printPatientNotes($pid);
             echo "</div>";
         } elseif ($val == "transactions") {
             echo "<hr />";
             echo "<div class='text transactions'>\n";
-            print "<h1>".xl('Patient Transactions').":</h1>";
+            print "<h1>" . xlt('Patient Transactions') . ":</h1>";
             printPatientTransactions($pid);
             echo "</div>";
         }
@@ -805,7 +799,7 @@ foreach ($ar as $key => $val) {
                 $d = new Document($document_id);
                 $fname = basename($d->get_url());
                 $extension = substr($fname, strrpos($fname, "."));
-                echo "<h1>" . xlt('Document') . " '" . text($fname) ."'</h1>";
+                echo "<h1>" . xlt('Document') . " '" . text($fname) . "'</h1>";
 
                 $notes = $d->get_notes();
                 if (!empty($notes)) {
@@ -820,7 +814,7 @@ foreach ($ar as $key => $val) {
                     echo '<td>' . xlt('Date') . ': ' . text(oeFormatShortDate($note->get_date())) . '</td>';
                     echo '</tr>';
                     echo '<tr>';
-                    echo '<td>' . text($note->get_note()) . '<br><br></td>';
+                    echo '<td>' . text($note->get_note()) . '<br /><br /></td>';
                     echo '</tr>';
                 }
 
@@ -831,11 +825,11 @@ foreach ($ar as $key => $val) {
                 if ($extension == ".png" || $extension == ".jpg" || $extension == ".jpeg" || $extension == ".gif") {
                     if ($PDF_OUTPUT) {
                         // OK to link to the image file because it will be accessed by the
-                        // HTML2PDF parser and not the browser.
-                        $tempDocC = new C_Document;
+                        // mPDF parser and not the browser.
+                        $tempDocC = new C_Document();
                         $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
                         // tmp file in ../documents/temp since need to be available via webroot
-                        $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'].'/documents/temp', "oer");
+                        $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
                         file_put_contents($from_file_tmp_web_name, $fileTemp);
                         echo "<img src='$from_file_tmp_web_name'";
                         // Flag images with excessive width for possible stylesheet action.
@@ -844,11 +838,11 @@ foreach ($ar as $key => $val) {
                             echo " class='bigimage'";
                         }
                         $tmp_files_remove[] = $from_file_tmp_web_name;
-                        echo " /><br><br>";
+                        echo " /><br /><br />";
                     } else {
                         echo "<img src='" . $GLOBALS['webroot'] .
                             "/controller.php?document&retrieve&patient_id=&document_id=" .
-                            attr_url($document_id) . "&as_file=false'><br><br>";
+                            attr_url($document_id) . "&as_file=false'><br /><br />";
                     }
                 } else {
                     // Most clinic documents are expected to be PDFs, and in that happy case
@@ -856,47 +850,60 @@ foreach ($ar as $key => $val) {
                     if ($PDF_OUTPUT && $extension == ".pdf") {
                         echo "</div></div>\n"; // HTML to PDF conversion will fail if there are open tags.
                         $content = getContent();
-                        // $pdf->setDefaultFont('Arial');
-                        $pdf->writeHTML($content, false); // catch up with buffer.
-                        $tempDocC = new C_Document;
-                        $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
-                        // tmp file in temporary_files_dir
-                        $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
-                        file_put_contents($from_file_tmp_name, $pdfTemp);
-                        $pagecount = $pdf->pdf->setSourceFile($from_file_tmp_name);
-                        for ($i = 0; $i < $pagecount; ++$i) {
-                            $pdf->pdf->AddPage();
-                            $itpl = $pdf->pdf->importPage($i + 1, '/MediaBox');
-                            $pdf->pdf->useTemplate($itpl);
+                        $pdf->writeHTML($content); // catch up with buffer.
+                        $err = '';
+                        try {
+                            $tempDocC = new C_Document();
+                            $pdfTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, true, true, true);
+                            // tmp file in temporary_files_dir
+                            $from_file_tmp_name = tempnam($GLOBALS['temporary_files_dir'], "oer");
+                            file_put_contents($from_file_tmp_name, $pdfTemp);
+
+                            $pagecount = $pdf->setSourceFile($from_file_tmp_name);
+                            for ($i = 0; $i < $pagecount; ++$i) {
+                                $pdf->AddPage();
+                                $itpl = $pdf->importPage($i + 1);
+                                $pdf->useTemplate($itpl);
+                            }
+                        } catch (Exception $e) {
+                            // chances are PDF is > v1.4 and compression level not supported.
+                            // regardless, we're here so lets dispose in different way.
+                            //
+                            unlink($from_file_tmp_name);
+                            $archive_name = ($GLOBALS['temporary_files_dir'] . '/' . report_basename($pid)['base'] . ".zip");
+                            $rtn = zip_content(basename($d->url), $archive_name, $pdfTemp);
+                            $err = "<span>" . xlt('PDF Document Parse Error and not included. Check if included in archive.') . " : " . text($fname) . "</span>";
+                            $pdf->writeHTML($err);
+                            $staged_docs[] = array('path' => $d->url, 'fname' => $fname);
+                        } finally {
+                            unlink($from_file_tmp_name);
+                            // Make sure whatever follows is on a new page. Maybe!
+                            // okay if not a series of pdfs so if so need @todo
+                            if (empty($err)) {
+                                $pdf->AddPage();
+                            }
+                            // Resume output buffering and the above-closed tags.
+                            ob_start();
+                            echo "<div><div class='text documents'>\n";
                         }
-                        // Make sure whatever follows is on a new page.
-                        $pdf->pdf->AddPage();
-                        unlink($from_file_tmp_name);
-
-                        // Resume output buffering and the above-closed tags.
-                        ob_start();
-
-                        echo "<div><div class='text documents'>\n";
                     } else {
                         if ($PDF_OUTPUT) {
-                            // OK to link to the image file because it will be accessed by the HTML2PDF parser and not the browser.
-                            $tempDocC = new C_Document;
+                            // OK to link to the image file because it will be accessed by the mPDF parser and not the browser.
+                            $tempDocC = new C_Document();
                             $fileTemp = $tempDocC->retrieve_action($d->get_foreign_id(), $document_id, false, false, true, true);
                             // tmp file in ../documents/temp since need to be available via webroot
-                            $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'].'/documents/temp', "oer");
+                            $from_file_tmp_web_name = tempnam($GLOBALS['OE_SITE_DIR'] . '/documents/temp', "oer");
                             file_put_contents($from_file_tmp_web_name, $fileTemp);
-                            echo "<img src='$from_file_tmp_web_name'><br><br>";
+                            echo "<img src='$from_file_tmp_web_name'><br /><br />";
                             $tmp_files_remove[] = $from_file_tmp_web_name;
                         } else {
-                            echo "<img src='" . $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=&document_id=" . attr_url($document_id) . "&as_file=false&original_file=false'><br><br>";
+                            echo "<img src='" . $GLOBALS['webroot'] . "/controller.php?document&retrieve&patient_id=&document_id=" . attr_url($document_id) . "&as_file=false&original_file=false'><br /><br />";
                         }
                     }
                 } // end if-else
             } // end Documents loop
             echo "</div>";
-        } // Procedures is an array of checkboxes whose values are procedure order IDs.
-        //
-        else if ($key == "procedures") {
+        } elseif ($key == "procedures") { // Procedures is an array of checkboxes whose values are procedure order IDs.
             if ($auth_med) {
                 echo "<hr />";
                 echo "<div class='text documents'>";
@@ -911,39 +918,39 @@ foreach ($ar as $key => $val) {
 
                 echo "</div>";
             }
-        } else if (strpos($key, "issue_") === 0) {
+        } elseif (strpos($key, "issue_") === 0) {
             // display patient Issues
 
             if ($first_issue) {
                 $prevIssueType = 'asdf1234!@#$'; // random junk so as to not match anything
                 $first_issue = 0;
                 echo "<hr />";
-                echo "<h1>".xl("Issues")."</h1>";
+                echo "<h1>" . xlt("Issues") . "</h1>";
             }
 
             preg_match('/^(.*)_(\d+)$/', $key, $res);
             $rowid = $res[2];
             $irow = sqlQuery("SELECT type, title, comments, diagnosis " .
-                            "FROM lists WHERE id = '$rowid'");
+                            "FROM lists WHERE id = ?", [$rowid]);
             $diagnosis = $irow['diagnosis'];
             if ($prevIssueType != $irow['type']) {
                 // output a header for each Issue Type we encounter
                 $disptype = $ISSUE_TYPES[$irow['type']][0];
-                echo "<div class='issue_type'>" . $disptype . ":</div>\n";
+                echo "<div class='issue_type'>" . attr($disptype) . ":</div>\n";
                 $prevIssueType = $irow['type'];
             }
 
             echo "<div class='text issue'>";
-            echo "<span class='issue_title'>" . $irow['title'] . ":</span>";
-            echo "<span class='issue_comments'> " . $irow['comments'] . "</span>\n";
+            echo "<span class='issue_title'>" . text($irow['title']) . ":</span>";
+            echo "<span class='issue_comments'> " . text($irow['comments']) . "</span>\n";
             // Show issue's chief diagnosis and its description:
             if ($diagnosis) {
                 echo "<div class='text issue_diag'>";
-                echo "<span class='bold'>[".xl('Diagnosis')."]</span><br>";
+                echo "<span class='bold'>[" . xlt('Diagnosis') . "]</span><br />";
                 $dcodes = explode(";", $diagnosis);
                 foreach ($dcodes as $dcode) {
-                    echo "<span class='italic'>".$dcode."</span>: ";
-                    echo lookup_code_descriptions($dcode)."<br>\n";
+                    echo "<span class='italic'>" . text($dcode) . "</span>: ";
+                    echo lookup_code_descriptions($dcode) . "<br />\n";
                 }
 
                 //echo $diagnosis." -- ".lookup_code_descriptions($diagnosis)."\n";
@@ -953,11 +960,11 @@ foreach ($ar as $key => $val) {
             // Supplemental data for GCAC or Contraception issues.
             if ($irow['type'] == 'ippf_gcac') {
                 echo "   <table>\n";
-                display_layout_rows('GCA', sqlQuery("SELECT * FROM lists_ippf_gcac WHERE id = '$rowid'"));
+                display_layout_rows('GCA', sqlQuery("SELECT * FROM lists_ippf_gcac WHERE id = ?", [$rowid]));
                 echo "   </table>\n";
-            } else if ($irow['type'] == 'contraceptive') {
+            } elseif ($irow['type'] == 'contraceptive') {
                 echo "   <table>\n";
-                display_layout_rows('CON', sqlQuery("SELECT * FROM lists_ippf_con WHERE id = '$rowid'"));
+                display_layout_rows('CON', sqlQuery("SELECT * FROM lists_ippf_con WHERE id = ?", [$rowid]));
                 echo "   </table>\n";
             }
 
@@ -979,20 +986,20 @@ foreach ($ar as $key => $val) {
 
                 if ($res[1] == 'newpatient') {
                     echo "<div class='text encounter'>\n";
-                    echo "<h1>" . xl($formres["form_name"]) . "</h1>";
+                    echo "<h1>" . xlt($formres["form_name"]) . "</h1>";
                 } else {
                     echo "<div class='text encounter_form'>";
-                    echo "<h1>" . xl_form_title($formres["form_name"]) . "</h1>";
+                    echo "<h1>" . text(xl_form_title($formres["form_name"])) . "</h1>";
                 }
 
                 // show the encounter's date
-                echo "(" . oeFormatSDFT(strtotime($dateres["date"])) . ") ";
+                echo "(" . text(oeFormatSDFT(strtotime($dateres["date"]))) . ") ";
                 if ($res[1] == 'newpatient') {
                     // display the provider info
-                    echo ' '. xl('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
+                    echo ' ' . xlt('Provider') . ': ' . text(getProviderName(getProviderIdOfEncounter($form_encounter)));
                 }
 
-                echo "<br>\n";
+                echo "<br />\n";
 
                 // call the report function for the form
                 ?>
@@ -1026,9 +1033,9 @@ foreach ($ar as $key => $val) {
                         "ORDER BY b.date",
                         array($pid, $form_encounter)
                     );
-                    while ($brow=sqlFetchArray($bres)) {
-                        echo "<span class='bold'>&nbsp;".xl('Procedure').": </span><span class='text'>" .
-                            $brow['code'] . " " . $brow['code_text'] . "</span><br>\n";
+                    while ($brow = sqlFetchArray($bres)) {
+                        echo "<span class='bold'>&nbsp;" . xlt('Procedure') . ": </span><span class='text'>" .
+                            text($brow['code']) . " " . text($brow['code_text']) . "</span><br />\n";
                     }
                 }
 
@@ -1039,7 +1046,7 @@ foreach ($ar as $key => $val) {
 } // end $ar loop
 
 if ($printable) {
-    echo "<br /><br />" . xl('Signature') . ": _______________________________<br />";
+    echo "<br /><br />" . xlt('Signature') . ": _______________________________<br />";
 }
 ?>
 
@@ -1048,39 +1055,54 @@ if ($printable) {
 <?php
 if ($PDF_OUTPUT) {
     $content = getContent();
-  // $pdf->setDefaultFont('Arial');
-    $pdf->writeHTML($content, false);
-    if ($PDF_OUTPUT == 1) {
-        $pdf->Output('report.pdf', $GLOBALS['pdf_output']); // D = Download, I = Inline
-    } else {
-        // This is the case of writing the PDF as a message to the CMS portal.
-        $ptdata = getPatientData($pid, 'cmsportal_login');
-        $contents = $pdf->Output('', true);
-        echo "<html><head>\n";
-        echo "<link rel='stylesheet' href='$css_header' type='text/css'>\n";
-        echo "</head><body class='body_top'>\n";
-        $result = cms_portal_call(array(
-        'action'   => 'putmessage',
-        'user'     => $ptdata['cmsportal_login'],
-        'title'    => xl('Your Clinical Report'),
-        'message'  => xl('Please see the attached PDF.'),
-        'filename' => 'report.pdf',
-        'mimetype' => 'application/pdf',
-        'contents' => base64_encode($contents),
-        ));
-        if ($result['errmsg']) {
-            die(text($result['errmsg']));
+    $ptd = report_basename($pid);
+    $fn = $ptd['base'] . ".pdf";
+    $pdf->SetTitle(ucfirst($ptd['fname']) . ' ' . $ptd['lname'] . ' ' . xl('Id') . ':' . $pid . ' ' . xl('Report'));
+    $isit_utf8 = preg_match('//u', $content); // quick check for invalid encoding
+    if (!$isit_utf8) {
+        if (function_exists('iconv')) { // if we can lets save the report
+            $content = iconv("UTF-8", "UTF-8//IGNORE", $content);
+        } else { // no sense going on.
+            $die_str = xlt("Failed UTF8 encoding check! Could not automatically fix.");
+            die($die_str);
         }
+    }
 
-        echo "<p>" . xlt('Report has been sent to the patient.') . "</p>\n";
-        echo "</body></html>\n";
+    try {
+        $pdf->writeHTML($content); // convert html
+    } catch (Exception $exception) {
+        die(text($exception));
+    }
+
+    if ($PDF_OUTPUT == 1) {
+        try {
+            if (!empty($archive_name) && sizeof($staged_docs) > 0) {
+                $rtn = zip_content(basename($fn), $archive_name, $pdf->Output($fn, 'S'));
+                header('Content-Description: File Transfer');
+                header('Content-Transfer-Encoding: binary');
+                header('Expires: 0');
+                header("Cache-control: private");
+                header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+                header("Content-Type: application/zip; charset=utf-8");
+                header("Content-Length: " . filesize($archive_name));
+                header('Content-Disposition: attachment; filename="' . basename($archive_name) . '"');
+
+                ob_end_clean();
+                @readfile($archive_name) or error_log("Archive temp file not found: " . $archive_name);
+
+                unlink($archive_name);
+            } else {
+                $pdf->Output($fn, $GLOBALS['pdf_output']); // D = Download, I = Inline
+            }
+        } catch (Exception $exception) {
+            die(text($exception));
+        }
     }
     foreach ($tmp_files_remove as $tmp_file) {
         // Remove the tmp files that were created
         unlink($tmp_file);
     }
-} else {
-?>
+} else { ?>
 </body>
 </html>
 <?php } ?>

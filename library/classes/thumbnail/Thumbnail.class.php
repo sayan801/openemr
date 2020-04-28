@@ -1,4 +1,5 @@
 <?php
+
 /**
  * library/classes/thumbnail/Thumbnail.class.php Make thumbnail file using PHP GD functions.
  *
@@ -81,7 +82,7 @@ class Thumbnail
         }
 
         if (!$info) {
-            error_log("Can't open file $file for generate thumbnail");
+            error_log("Can't open file " . errorLogEscape($file) . " for generate thumbnail");
             return false;
         }
 

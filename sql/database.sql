@@ -57,7 +57,7 @@ CREATE TABLE `amendments` (
   `amendment_desc` text COMMENT 'Amendment Details',
   `created_by` int(11) NOT NULL COMMENT 'references users.id for session owner',
   `modified_by` int(11) NULL COMMENT 'references users.id for session owner',
-  `created_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT 'created time',
+  `created_time` timestamp NULL COMMENT 'created time',
   `modified_time` timestamp NULL COMMENT 'modified time',
   PRIMARY KEY amendments_id(`amendment_id`),
   KEY amendment_pid(`pid`)
@@ -78,18 +78,6 @@ CREATE TABLE `amendments_history` (
   `created_time` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' COMMENT 'created time',
 KEY amendment_history_id(`amendment_id`)
 ) ENGINE = InnoDB;
-
------------------------------------------------------------
-
---
--- Table structure for table `array`
---
-
-DROP TABLE IF EXISTS `array`;
-CREATE TABLE `array` (
-  `array_key` varchar(255) default NULL,
-  `array_value` longtext
-) ENGINE=InnoDB;
 
 -----------------------------------------------------------
 
@@ -1040,7 +1028,7 @@ DROP TABLE IF EXISTS `codes`;
 CREATE TABLE `codes` (
   `id` int(11) NOT NULL auto_increment,
   `code_text` varchar(255) NOT NULL default '',
-  `code_text_short` varchar(24) NOT NULL default '',
+  `code_text_short` varchar(255) NOT NULL default '',
   `code` varchar(25) NOT NULL default '',
   `code_type` smallint(6) default NULL,
   `modifier` varchar(12) NOT NULL default '',
@@ -1090,43 +1078,6 @@ CREATE TABLE `syndromic_surveillance` (
   PRIMARY KEY  (`id`),
   KEY (`lists_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
-
------------------------------------------------------------
-
---
--- Table structure for table `config`
---
-
-DROP TABLE IF EXISTS `config`;
-CREATE TABLE `config` (
-  `id` int(11) NOT NULL default '0',
-  `name` varchar(255) default NULL,
-  `value` varchar(255) default NULL,
-  `parent` int(11) NOT NULL default '0',
-  `lft` int(11) NOT NULL default '0',
-  `rght` int(11) NOT NULL default '0',
-  PRIMARY KEY  (`id`),
-  KEY `parent` (`parent`),
-  KEY `lft` (`lft`,`rght`)
-) ENGINE=InnoDB;
-
------------------------------------------------------------
-
---
--- Table structure for table `config_seq`
---
-
-DROP TABLE IF EXISTS `config_seq`;
-CREATE TABLE `config_seq` (
-  `id` int(11) NOT NULL default '0',
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB;
-
---
--- Inserting data for table `config_seq`
---
-
-INSERT INTO `config_seq` VALUES (0);
 
 -----------------------------------------------------------
 
@@ -1526,22 +1477,40 @@ CREATE  TABLE `erx_ttl_touch` (
 -----------------------------------------------------------
 
 --
--- Table structure for table `erx_drug_paid`
+-- Table structure for table `erx_weno_drugs`
 --
 
-DROP TABLE IF EXISTS `erx_drug_paid`;
-CREATE TABLE `erx_drug_paid` (
-  `drugid` int(11) NOT NULL AUTO_INCREMENT,
-  `drug_label_name` varchar(45) NOT NULL,
-  `ahfs_descr` varchar(45) NOT NULL,
-  `ndc` bigint(12) NOT NULL,
-  `price_per_unit` decimal(5,2) NOT NULL,
-  `avg_price` decimal(6,2) NOT NULL,
-  `avg_price_paid` int(6) NOT NULL,
-  `avg_savings` decimal(6,2) NOT NULL,
-  `avg_percent` decimal(6,2) NOT NULL,
-   PRIMARY KEY (`drugid`)
-   ) ENGINE=InnoDB;
+DROP TABLE IF EXISTS `erx_weno_drugs`;
+CREATE TABLE `erx_weno_drugs` (
+  `drug_id` int(11) NOT NULL AUTO_INCREMENT,
+  `rxcui_drug_coded` int(11) DEFAULT NULL,
+  `generic_rxcui` int(11) DEFAULT NULL,
+  `drug_db_code_qualifier` text,
+  `full_name` varchar(250) NOT NULL,
+  `rxn_dose_form` text,
+  `full_generic_name` varchar(250) NOT NULL,
+  `brand_name` varchar(250) NOT NULL,
+  `display_name` varchar(250) NOT NULL,
+  `route` text,
+  `new_dose_form` varchar(100) DEFAULT NULL,
+  `strength` varchar(15) DEFAULT NULL,
+  `supress_for` text,
+  `display_name_synonym` text,
+  `is_retired` text,
+  `sxdg_rxcui` varchar(10) DEFAULT NULL,
+  `sxdg_tty` text,
+  `sxdg_name` varchar(100) DEFAULT NULL,
+  `psn_drugdescription` varchar(100) DEFAULT NULL,
+  `ncpdp_quantity_term` text,
+  `potency_unit_code` varchar(10) DEFAULT NULL,
+  `dea_schedule_no` int(2) DEFAULT NULL,
+  `dea_schedule` varchar(7) DEFAULT NULL,
+  `ingredients` varchar(100) DEFAULT NULL,
+  `drug_interaction` varchar(100) DEFAULT NULL,
+  `unit_source_code` varchar(3) DEFAULT NULL,
+  `code_list_qualifier` int(3) DEFAULT NULL,
+  PRIMARY KEY (`drug_id`)
+) ENGINE=InnoDB;
 
 -----------------------------------------------------------
 
@@ -1617,8 +1586,8 @@ CREATE TABLE `facility` (
   `website` varchar(255) default NULL,
   `email` varchar(255) default NULL,
   `service_location` tinyint(1) NOT NULL default '1',
-  `billing_location` tinyint(1) NOT NULL default '0',
-  `accepts_assignment` tinyint(1) NOT NULL default '0',
+  `billing_location` tinyint(1) NOT NULL default '1',
+  `accepts_assignment` tinyint(1) NOT NULL default '1',
   `pos_code` tinyint(4) default NULL,
   `x12_sender_id` varchar(25) default NULL,
   `attn` varchar(65) default NULL,
@@ -1627,7 +1596,7 @@ CREATE TABLE `facility` (
   `facility_taxonomy` varchar(15) default NULL,
   `tax_id_type` VARCHAR(31) NOT NULL DEFAULT '',
   `color` VARCHAR(7) NOT NULL DEFAULT '',
-  `primary_business_entity` INT(10) NOT NULL DEFAULT '0' COMMENT '0-Not Set as business entity 1-Set as business entity',
+  `primary_business_entity` INT(10) NOT NULL DEFAULT '1' COMMENT '0-Not Set as business entity 1-Set as business entity',
   `facility_code` VARCHAR(31) default NULL,
   `extra_validation` tinyint(1) NOT NULL DEFAULT '1',
   `mail_street` varchar(30) default NULL,
@@ -1636,6 +1605,8 @@ CREATE TABLE `facility` (
   `mail_state` varchar(3) default NULL,
   `mail_zip` varchar(10) default NULL,
   `oid` VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'HIEs CCDA and FHIR an OID is required/wanted',
+  `iban` varchar(50) default NULL,
+  `info` TEXT,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 ;
 
@@ -1643,7 +1614,7 @@ CREATE TABLE `facility` (
 -- Inserting data for table `facility`
 --
 
-INSERT INTO `facility` VALUES (3, 'Your Clinic Name Here', '000-000-0000', '000-000-0000', '', '', '', '', '', '', NULL, NULL, 1, 1, 0, NULL, '', '', '', '', '', '','#99FFFF','0', '', '1', '', '', '', '', '', '');
+INSERT INTO `facility` VALUES (3, 'Your Clinic Name Here', '000-000-0000', '000-000-0000', '', '', '', '', '', '', NULL, NULL, 1, 1, 0, NULL, '', '', '', '', '', '','#99FFFF','0', '', '1', '', '', '', '', '', '', '', '');
 
 -----------------------------------------------------------
 
@@ -1740,6 +1711,7 @@ CREATE TABLE `form_encounter` (
   `billing_facility` INT(11) NOT NULL DEFAULT 0,
   `external_id` VARCHAR(20) DEFAULT NULL,
   `pos_code` tinyint(4) default NULL,
+  `parent_encounter_id` BIGINT(20) NULL DEFAULT NULL,
   PRIMARY KEY  (`id`),
   KEY `pid_encounter` (`pid`, `encounter`),
   KEY `encounter_date` (`date`)
@@ -2154,368 +2126,6 @@ CREATE TABLE `forms` (
 -----------------------------------------------------------
 
 --
--- Table structure for table `geo_country_reference`
---
-
-DROP TABLE IF EXISTS `geo_country_reference`;
-CREATE TABLE `geo_country_reference` (
-  `countries_id` int(5) NOT NULL auto_increment,
-  `countries_name` varchar(64) default NULL,
-  `countries_iso_code_2` char(2) NOT NULL default '',
-  `countries_iso_code_3` char(3) NOT NULL default '',
-  PRIMARY KEY  (`countries_id`),
-  KEY `IDX_COUNTRIES_NAME` (`countries_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=240 ;
-
---
--- Inserting data for table `geo_country_reference`
---
-
-INSERT INTO `geo_country_reference` VALUES (1, 'Afghanistan', 'AF', 'AFG');
-INSERT INTO `geo_country_reference` VALUES (2, 'Albania', 'AL', 'ALB');
-INSERT INTO `geo_country_reference` VALUES (3, 'Algeria', 'DZ', 'DZA');
-INSERT INTO `geo_country_reference` VALUES (4, 'American Samoa', 'AS', 'ASM');
-INSERT INTO `geo_country_reference` VALUES (5, 'Andorra', 'AD', 'AND');
-INSERT INTO `geo_country_reference` VALUES (6, 'Angola', 'AO', 'AGO');
-INSERT INTO `geo_country_reference` VALUES (7, 'Anguilla', 'AI', 'AIA');
-INSERT INTO `geo_country_reference` VALUES (8, 'Antarctica', 'AQ', 'ATA');
-INSERT INTO `geo_country_reference` VALUES (9, 'Antigua and Barbuda', 'AG', 'ATG');
-INSERT INTO `geo_country_reference` VALUES (10, 'Argentina', 'AR', 'ARG');
-INSERT INTO `geo_country_reference` VALUES (11, 'Armenia', 'AM', 'ARM');
-INSERT INTO `geo_country_reference` VALUES (12, 'Aruba', 'AW', 'ABW');
-INSERT INTO `geo_country_reference` VALUES (13, 'Australia', 'AU', 'AUS');
-INSERT INTO `geo_country_reference` VALUES (14, 'Austria', 'AT', 'AUT');
-INSERT INTO `geo_country_reference` VALUES (15, 'Azerbaijan', 'AZ', 'AZE');
-INSERT INTO `geo_country_reference` VALUES (16, 'Bahamas', 'BS', 'BHS');
-INSERT INTO `geo_country_reference` VALUES (17, 'Bahrain', 'BH', 'BHR');
-INSERT INTO `geo_country_reference` VALUES (18, 'Bangladesh', 'BD', 'BGD');
-INSERT INTO `geo_country_reference` VALUES (19, 'Barbados', 'BB', 'BRB');
-INSERT INTO `geo_country_reference` VALUES (20, 'Belarus', 'BY', 'BLR');
-INSERT INTO `geo_country_reference` VALUES (21, 'Belgium', 'BE', 'BEL');
-INSERT INTO `geo_country_reference` VALUES (22, 'Belize', 'BZ', 'BLZ');
-INSERT INTO `geo_country_reference` VALUES (23, 'Benin', 'BJ', 'BEN');
-INSERT INTO `geo_country_reference` VALUES (24, 'Bermuda', 'BM', 'BMU');
-INSERT INTO `geo_country_reference` VALUES (25, 'Bhutan', 'BT', 'BTN');
-INSERT INTO `geo_country_reference` VALUES (26, 'Bolivia', 'BO', 'BOL');
-INSERT INTO `geo_country_reference` VALUES (27, 'Bosnia and Herzegowina', 'BA', 'BIH');
-INSERT INTO `geo_country_reference` VALUES (28, 'Botswana', 'BW', 'BWA');
-INSERT INTO `geo_country_reference` VALUES (29, 'Bouvet Island', 'BV', 'BVT');
-INSERT INTO `geo_country_reference` VALUES (30, 'Brazil', 'BR', 'BRA');
-INSERT INTO `geo_country_reference` VALUES (31, 'British Indian Ocean Territory', 'IO', 'IOT');
-INSERT INTO `geo_country_reference` VALUES (32, 'Brunei Darussalam', 'BN', 'BRN');
-INSERT INTO `geo_country_reference` VALUES (33, 'Bulgaria', 'BG', 'BGR');
-INSERT INTO `geo_country_reference` VALUES (34, 'Burkina Faso', 'BF', 'BFA');
-INSERT INTO `geo_country_reference` VALUES (35, 'Burundi', 'BI', 'BDI');
-INSERT INTO `geo_country_reference` VALUES (36, 'Cambodia', 'KH', 'KHM');
-INSERT INTO `geo_country_reference` VALUES (37, 'Cameroon', 'CM', 'CMR');
-INSERT INTO `geo_country_reference` VALUES (38, 'Canada', 'CA', 'CAN');
-INSERT INTO `geo_country_reference` VALUES (39, 'Cape Verde', 'CV', 'CPV');
-INSERT INTO `geo_country_reference` VALUES (40, 'Cayman Islands', 'KY', 'CYM');
-INSERT INTO `geo_country_reference` VALUES (41, 'Central African Republic', 'CF', 'CAF');
-INSERT INTO `geo_country_reference` VALUES (42, 'Chad', 'TD', 'TCD');
-INSERT INTO `geo_country_reference` VALUES (43, 'Chile', 'CL', 'CHL');
-INSERT INTO `geo_country_reference` VALUES (44, 'China', 'CN', 'CHN');
-INSERT INTO `geo_country_reference` VALUES (45, 'Christmas Island', 'CX', 'CXR');
-INSERT INTO `geo_country_reference` VALUES (46, 'Cocos (Keeling) Islands', 'CC', 'CCK');
-INSERT INTO `geo_country_reference` VALUES (47, 'Colombia', 'CO', 'COL');
-INSERT INTO `geo_country_reference` VALUES (48, 'Comoros', 'KM', 'COM');
-INSERT INTO `geo_country_reference` VALUES (49, 'Congo', 'CG', 'COG');
-INSERT INTO `geo_country_reference` VALUES (50, 'Cook Islands', 'CK', 'COK');
-INSERT INTO `geo_country_reference` VALUES (51, 'Costa Rica', 'CR', 'CRI');
-INSERT INTO `geo_country_reference` VALUES (52, 'Cote D Ivoire', 'CI', 'CIV');
-INSERT INTO `geo_country_reference` VALUES (53, 'Croatia', 'HR', 'HRV');
-INSERT INTO `geo_country_reference` VALUES (54, 'Cuba', 'CU', 'CUB');
-INSERT INTO `geo_country_reference` VALUES (55, 'Cyprus', 'CY', 'CYP');
-INSERT INTO `geo_country_reference` VALUES (56, 'Czech Republic', 'CZ', 'CZE');
-INSERT INTO `geo_country_reference` VALUES (57, 'Denmark', 'DK', 'DNK');
-INSERT INTO `geo_country_reference` VALUES (58, 'Djibouti', 'DJ', 'DJI');
-INSERT INTO `geo_country_reference` VALUES (59, 'Dominica', 'DM', 'DMA');
-INSERT INTO `geo_country_reference` VALUES (60, 'Dominican Republic', 'DO', 'DOM');
-INSERT INTO `geo_country_reference` VALUES (61, 'East Timor', 'TP', 'TMP');
-INSERT INTO `geo_country_reference` VALUES (62, 'Ecuador', 'EC', 'ECU');
-INSERT INTO `geo_country_reference` VALUES (63, 'Egypt', 'EG', 'EGY');
-INSERT INTO `geo_country_reference` VALUES (64, 'El Salvador', 'SV', 'SLV');
-INSERT INTO `geo_country_reference` VALUES (65, 'Equatorial Guinea', 'GQ', 'GNQ');
-INSERT INTO `geo_country_reference` VALUES (66, 'Eritrea', 'ER', 'ERI');
-INSERT INTO `geo_country_reference` VALUES (67, 'Estonia', 'EE', 'EST');
-INSERT INTO `geo_country_reference` VALUES (68, 'Ethiopia', 'ET', 'ETH');
-INSERT INTO `geo_country_reference` VALUES (69, 'Falkland Islands (Malvinas)', 'FK', 'FLK');
-INSERT INTO `geo_country_reference` VALUES (70, 'Faroe Islands', 'FO', 'FRO');
-INSERT INTO `geo_country_reference` VALUES (71, 'Fiji', 'FJ', 'FJI');
-INSERT INTO `geo_country_reference` VALUES (72, 'Finland', 'FI', 'FIN');
-INSERT INTO `geo_country_reference` VALUES (73, 'France', 'FR', 'FRA');
-INSERT INTO `geo_country_reference` VALUES (74, 'France, MEtropolitan', 'FX', 'FXX');
-INSERT INTO `geo_country_reference` VALUES (75, 'French Guiana', 'GF', 'GUF');
-INSERT INTO `geo_country_reference` VALUES (76, 'French Polynesia', 'PF', 'PYF');
-INSERT INTO `geo_country_reference` VALUES (77, 'French Southern Territories', 'TF', 'ATF');
-INSERT INTO `geo_country_reference` VALUES (78, 'Gabon', 'GA', 'GAB');
-INSERT INTO `geo_country_reference` VALUES (79, 'Gambia', 'GM', 'GMB');
-INSERT INTO `geo_country_reference` VALUES (80, 'Georgia', 'GE', 'GEO');
-INSERT INTO `geo_country_reference` VALUES (81, 'Germany', 'DE', 'DEU');
-INSERT INTO `geo_country_reference` VALUES (82, 'Ghana', 'GH', 'GHA');
-INSERT INTO `geo_country_reference` VALUES (83, 'Gibraltar', 'GI', 'GIB');
-INSERT INTO `geo_country_reference` VALUES (84, 'Greece', 'GR', 'GRC');
-INSERT INTO `geo_country_reference` VALUES (85, 'Greenland', 'GL', 'GRL');
-INSERT INTO `geo_country_reference` VALUES (86, 'Grenada', 'GD', 'GRD');
-INSERT INTO `geo_country_reference` VALUES (87, 'Guadeloupe', 'GP', 'GLP');
-INSERT INTO `geo_country_reference` VALUES (88, 'Guam', 'GU', 'GUM');
-INSERT INTO `geo_country_reference` VALUES (89, 'Guatemala', 'GT', 'GTM');
-INSERT INTO `geo_country_reference` VALUES (90, 'Guinea', 'GN', 'GIN');
-INSERT INTO `geo_country_reference` VALUES (91, 'Guinea-bissau', 'GW', 'GNB');
-INSERT INTO `geo_country_reference` VALUES (92, 'Guyana', 'GY', 'GUY');
-INSERT INTO `geo_country_reference` VALUES (93, 'Haiti', 'HT', 'HTI');
-INSERT INTO `geo_country_reference` VALUES (94, 'Heard and Mc Donald Islands', 'HM', 'HMD');
-INSERT INTO `geo_country_reference` VALUES (95, 'Honduras', 'HN', 'HND');
-INSERT INTO `geo_country_reference` VALUES (96, 'Hong Kong', 'HK', 'HKG');
-INSERT INTO `geo_country_reference` VALUES (97, 'Hungary', 'HU', 'HUN');
-INSERT INTO `geo_country_reference` VALUES (98, 'Iceland', 'IS', 'ISL');
-INSERT INTO `geo_country_reference` VALUES (99, 'India', 'IN', 'IND');
-INSERT INTO `geo_country_reference` VALUES (100, 'Indonesia', 'ID', 'IDN');
-INSERT INTO `geo_country_reference` VALUES (101, 'Iran (Islamic Republic of)', 'IR', 'IRN');
-INSERT INTO `geo_country_reference` VALUES (102, 'Iraq', 'IQ', 'IRQ');
-INSERT INTO `geo_country_reference` VALUES (103, 'Ireland', 'IE', 'IRL');
-INSERT INTO `geo_country_reference` VALUES (104, 'Israel', 'IL', 'ISR');
-INSERT INTO `geo_country_reference` VALUES (105, 'Italy', 'IT', 'ITA');
-INSERT INTO `geo_country_reference` VALUES (106, 'Jamaica', 'JM', 'JAM');
-INSERT INTO `geo_country_reference` VALUES (107, 'Japan', 'JP', 'JPN');
-INSERT INTO `geo_country_reference` VALUES (108, 'Jordan', 'JO', 'JOR');
-INSERT INTO `geo_country_reference` VALUES (109, 'Kazakhstan', 'KZ', 'KAZ');
-INSERT INTO `geo_country_reference` VALUES (110, 'Kenya', 'KE', 'KEN');
-INSERT INTO `geo_country_reference` VALUES (111, 'Kiribati', 'KI', 'KIR');
-INSERT INTO `geo_country_reference` VALUES (112, 'Korea, Democratic Peoples Republic of', 'KP', 'PRK');
-INSERT INTO `geo_country_reference` VALUES (113, 'Korea, Republic of', 'KR', 'KOR');
-INSERT INTO `geo_country_reference` VALUES (114, 'Kuwait', 'KW', 'KWT');
-INSERT INTO `geo_country_reference` VALUES (115, 'Kyrgyzstan', 'KG', 'KGZ');
-INSERT INTO `geo_country_reference` VALUES (116, 'Lao Peoples Democratic Republic', 'LA', 'LAO');
-INSERT INTO `geo_country_reference` VALUES (117, 'Latvia', 'LV', 'LVA');
-INSERT INTO `geo_country_reference` VALUES (118, 'Lebanon', 'LB', 'LBN');
-INSERT INTO `geo_country_reference` VALUES (119, 'Lesotho', 'LS', 'LSO');
-INSERT INTO `geo_country_reference` VALUES (120, 'Liberia', 'LR', 'LBR');
-INSERT INTO `geo_country_reference` VALUES (121, 'Libyan Arab Jamahiriya', 'LY', 'LBY');
-INSERT INTO `geo_country_reference` VALUES (122, 'Liechtenstein', 'LI', 'LIE');
-INSERT INTO `geo_country_reference` VALUES (123, 'Lithuania', 'LT', 'LTU');
-INSERT INTO `geo_country_reference` VALUES (124, 'Luxembourg', 'LU', 'LUX');
-INSERT INTO `geo_country_reference` VALUES (125, 'Macau', 'MO', 'MAC');
-INSERT INTO `geo_country_reference` VALUES (126, 'Macedonia, The Former Yugoslav Republic of', 'MK', 'MKD');
-INSERT INTO `geo_country_reference` VALUES (127, 'Madagascar', 'MG', 'MDG');
-INSERT INTO `geo_country_reference` VALUES (128, 'Malawi', 'MW', 'MWI');
-INSERT INTO `geo_country_reference` VALUES (129, 'Malaysia', 'MY', 'MYS');
-INSERT INTO `geo_country_reference` VALUES (130, 'Maldives', 'MV', 'MDV');
-INSERT INTO `geo_country_reference` VALUES (131, 'Mali', 'ML', 'MLI');
-INSERT INTO `geo_country_reference` VALUES (132, 'Malta', 'MT', 'MLT');
-INSERT INTO `geo_country_reference` VALUES (133, 'Marshall Islands', 'MH', 'MHL');
-INSERT INTO `geo_country_reference` VALUES (134, 'Martinique', 'MQ', 'MTQ');
-INSERT INTO `geo_country_reference` VALUES (135, 'Mauritania', 'MR', 'MRT');
-INSERT INTO `geo_country_reference` VALUES (136, 'Mauritius', 'MU', 'MUS');
-INSERT INTO `geo_country_reference` VALUES (137, 'Mayotte', 'YT', 'MYT');
-INSERT INTO `geo_country_reference` VALUES (138, 'Mexico', 'MX', 'MEX');
-INSERT INTO `geo_country_reference` VALUES (139, 'Micronesia, Federated States of', 'FM', 'FSM');
-INSERT INTO `geo_country_reference` VALUES (140, 'Moldova, Republic of', 'MD', 'MDA');
-INSERT INTO `geo_country_reference` VALUES (141, 'Monaco', 'MC', 'MCO');
-INSERT INTO `geo_country_reference` VALUES (142, 'Mongolia', 'MN', 'MNG');
-INSERT INTO `geo_country_reference` VALUES (143, 'Montserrat', 'MS', 'MSR');
-INSERT INTO `geo_country_reference` VALUES (144, 'Morocco', 'MA', 'MAR');
-INSERT INTO `geo_country_reference` VALUES (145, 'Mozambique', 'MZ', 'MOZ');
-INSERT INTO `geo_country_reference` VALUES (146, 'Myanmar', 'MM', 'MMR');
-INSERT INTO `geo_country_reference` VALUES (147, 'Namibia', 'NA', 'NAM');
-INSERT INTO `geo_country_reference` VALUES (148, 'Nauru', 'NR', 'NRU');
-INSERT INTO `geo_country_reference` VALUES (149, 'Nepal', 'NP', 'NPL');
-INSERT INTO `geo_country_reference` VALUES (150, 'Netherlands', 'NL', 'NLD');
-INSERT INTO `geo_country_reference` VALUES (151, 'Netherlands Antilles', 'AN', 'ANT');
-INSERT INTO `geo_country_reference` VALUES (152, 'New Caledonia', 'NC', 'NCL');
-INSERT INTO `geo_country_reference` VALUES (153, 'New Zealand', 'NZ', 'NZL');
-INSERT INTO `geo_country_reference` VALUES (154, 'Nicaragua', 'NI', 'NIC');
-INSERT INTO `geo_country_reference` VALUES (155, 'Niger', 'NE', 'NER');
-INSERT INTO `geo_country_reference` VALUES (156, 'Nigeria', 'NG', 'NGA');
-INSERT INTO `geo_country_reference` VALUES (157, 'Niue', 'NU', 'NIU');
-INSERT INTO `geo_country_reference` VALUES (158, 'Norfolk Island', 'NF', 'NFK');
-INSERT INTO `geo_country_reference` VALUES (159, 'Northern Mariana Islands', 'MP', 'MNP');
-INSERT INTO `geo_country_reference` VALUES (160, 'Norway', 'NO', 'NOR');
-INSERT INTO `geo_country_reference` VALUES (161, 'Oman', 'OM', 'OMN');
-INSERT INTO `geo_country_reference` VALUES (162, 'Pakistan', 'PK', 'PAK');
-INSERT INTO `geo_country_reference` VALUES (163, 'Palau', 'PW', 'PLW');
-INSERT INTO `geo_country_reference` VALUES (164, 'Panama', 'PA', 'PAN');
-INSERT INTO `geo_country_reference` VALUES (165, 'Papua New Guinea', 'PG', 'PNG');
-INSERT INTO `geo_country_reference` VALUES (166, 'Paraguay', 'PY', 'PRY');
-INSERT INTO `geo_country_reference` VALUES (167, 'Peru', 'PE', 'PER');
-INSERT INTO `geo_country_reference` VALUES (168, 'Philippines', 'PH', 'PHL');
-INSERT INTO `geo_country_reference` VALUES (169, 'Pitcairn', 'PN', 'PCN');
-INSERT INTO `geo_country_reference` VALUES (170, 'Poland', 'PL', 'POL');
-INSERT INTO `geo_country_reference` VALUES (171, 'Portugal', 'PT', 'PRT');
-INSERT INTO `geo_country_reference` VALUES (172, 'Puerto Rico', 'PR', 'PRI');
-INSERT INTO `geo_country_reference` VALUES (173, 'Qatar', 'QA', 'QAT');
-INSERT INTO `geo_country_reference` VALUES (174, 'Reunion', 'RE', 'REU');
-INSERT INTO `geo_country_reference` VALUES (175, 'Romania', 'RO', 'ROM');
-INSERT INTO `geo_country_reference` VALUES (176, 'Russian Federation', 'RU', 'RUS');
-INSERT INTO `geo_country_reference` VALUES (177, 'Rwanda', 'RW', 'RWA');
-INSERT INTO `geo_country_reference` VALUES (178, 'Saint Kitts and Nevis', 'KN', 'KNA');
-INSERT INTO `geo_country_reference` VALUES (179, 'Saint Lucia', 'LC', 'LCA');
-INSERT INTO `geo_country_reference` VALUES (180, 'Saint Vincent and the Grenadines', 'VC', 'VCT');
-INSERT INTO `geo_country_reference` VALUES (181, 'Samoa', 'WS', 'WSM');
-INSERT INTO `geo_country_reference` VALUES (182, 'San Marino', 'SM', 'SMR');
-INSERT INTO `geo_country_reference` VALUES (183, 'Sao Tome and Principe', 'ST', 'STP');
-INSERT INTO `geo_country_reference` VALUES (184, 'Saudi Arabia', 'SA', 'SAU');
-INSERT INTO `geo_country_reference` VALUES (185, 'Senegal', 'SN', 'SEN');
-INSERT INTO `geo_country_reference` VALUES (186, 'Seychelles', 'SC', 'SYC');
-INSERT INTO `geo_country_reference` VALUES (187, 'Sierra Leone', 'SL', 'SLE');
-INSERT INTO `geo_country_reference` VALUES (188, 'Singapore', 'SG', 'SGP');
-INSERT INTO `geo_country_reference` VALUES (189, 'Slovakia (Slovak Republic)', 'SK', 'SVK');
-INSERT INTO `geo_country_reference` VALUES (190, 'Slovenia', 'SI', 'SVN');
-INSERT INTO `geo_country_reference` VALUES (191, 'Solomon Islands', 'SB', 'SLB');
-INSERT INTO `geo_country_reference` VALUES (192, 'Somalia', 'SO', 'SOM');
-INSERT INTO `geo_country_reference` VALUES (193, 'south Africa', 'ZA', 'ZAF');
-INSERT INTO `geo_country_reference` VALUES (194, 'South Georgia and the South Sandwich Islands', 'GS', 'SGS');
-INSERT INTO `geo_country_reference` VALUES (195, 'Spain', 'ES', 'ESP');
-INSERT INTO `geo_country_reference` VALUES (196, 'Sri Lanka', 'LK', 'LKA');
-INSERT INTO `geo_country_reference` VALUES (197, 'St. Helena', 'SH', 'SHN');
-INSERT INTO `geo_country_reference` VALUES (198, 'St. Pierre and Miquelon', 'PM', 'SPM');
-INSERT INTO `geo_country_reference` VALUES (199, 'Sudan', 'SD', 'SDN');
-INSERT INTO `geo_country_reference` VALUES (200, 'Suriname', 'SR', 'SUR');
-INSERT INTO `geo_country_reference` VALUES (201, 'Svalbard and Jan Mayen Islands', 'SJ', 'SJM');
-INSERT INTO `geo_country_reference` VALUES (202, 'Swaziland', 'SZ', 'SWZ');
-INSERT INTO `geo_country_reference` VALUES (203, 'Sweden', 'SE', 'SWE');
-INSERT INTO `geo_country_reference` VALUES (204, 'Switzerland', 'CH', 'CHE');
-INSERT INTO `geo_country_reference` VALUES (205, 'Syrian Arab Republic', 'SY', 'SYR');
-INSERT INTO `geo_country_reference` VALUES (206, 'Taiwan, Province of China', 'TW', 'TWN');
-INSERT INTO `geo_country_reference` VALUES (207, 'Tajikistan', 'TJ', 'TJK');
-INSERT INTO `geo_country_reference` VALUES (208, 'Tanzania, United Republic of', 'TZ', 'TZA');
-INSERT INTO `geo_country_reference` VALUES (209, 'Thailand', 'TH', 'THA');
-INSERT INTO `geo_country_reference` VALUES (210, 'Togo', 'TG', 'TGO');
-INSERT INTO `geo_country_reference` VALUES (211, 'Tokelau', 'TK', 'TKL');
-INSERT INTO `geo_country_reference` VALUES (212, 'Tonga', 'TO', 'TON');
-INSERT INTO `geo_country_reference` VALUES (213, 'Trinidad and Tobago', 'TT', 'TTO');
-INSERT INTO `geo_country_reference` VALUES (214, 'Tunisia', 'TN', 'TUN');
-INSERT INTO `geo_country_reference` VALUES (215, 'Turkey', 'TR', 'TUR');
-INSERT INTO `geo_country_reference` VALUES (216, 'Turkmenistan', 'TM', 'TKM');
-INSERT INTO `geo_country_reference` VALUES (217, 'Turks and Caicos Islands', 'TC', 'TCA');
-INSERT INTO `geo_country_reference` VALUES (218, 'Tuvalu', 'TV', 'TUV');
-INSERT INTO `geo_country_reference` VALUES (219, 'Uganda', 'UG', 'UGA');
-INSERT INTO `geo_country_reference` VALUES (220, 'Ukraine', 'UA', 'UKR');
-INSERT INTO `geo_country_reference` VALUES (221, 'United Arab Emirates', 'AE', 'ARE');
-INSERT INTO `geo_country_reference` VALUES (222, 'United Kingdom', 'GB', 'GBR');
-INSERT INTO `geo_country_reference` VALUES (223, 'United States', 'US', 'USA');
-INSERT INTO `geo_country_reference` VALUES (224, 'United States Minor Outlying Islands', 'UM', 'UMI');
-INSERT INTO `geo_country_reference` VALUES (225, 'Uruguay', 'UY', 'URY');
-INSERT INTO `geo_country_reference` VALUES (226, 'Uzbekistan', 'UZ', 'UZB');
-INSERT INTO `geo_country_reference` VALUES (227, 'Vanuatu', 'VU', 'VUT');
-INSERT INTO `geo_country_reference` VALUES (228, 'Vatican City State (Holy See)', 'VA', 'VAT');
-INSERT INTO `geo_country_reference` VALUES (229, 'Venezuela', 'VE', 'VEN');
-INSERT INTO `geo_country_reference` VALUES (230, 'Viet Nam', 'VN', 'VNM');
-INSERT INTO `geo_country_reference` VALUES (231, 'Virgin Islands (British)', 'VG', 'VGB');
-INSERT INTO `geo_country_reference` VALUES (232, 'Virgin Islands (U.S.)', 'VI', 'VIR');
-INSERT INTO `geo_country_reference` VALUES (233, 'Wallis and Futuna Islands', 'WF', 'WLF');
-INSERT INTO `geo_country_reference` VALUES (234, 'Western Sahara', 'EH', 'ESH');
-INSERT INTO `geo_country_reference` VALUES (235, 'Yemen', 'YE', 'YEM');
-INSERT INTO `geo_country_reference` VALUES (236, 'Yugoslavia', 'YU', 'YUG');
-INSERT INTO `geo_country_reference` VALUES (237, 'Zaire', 'ZR', 'ZAR');
-INSERT INTO `geo_country_reference` VALUES (238, 'Zambia', 'ZM', 'ZMB');
-INSERT INTO `geo_country_reference` VALUES (239, 'Zimbabwe', 'ZW', 'ZWE');
-
------------------------------------------------------------
-
---
--- Table structure for table `geo_zone_reference`
---
-
-DROP TABLE IF EXISTS `geo_zone_reference`;
-CREATE TABLE `geo_zone_reference` (
-  `zone_id` int(5) NOT NULL auto_increment,
-  `zone_country_id` int(5) NOT NULL default '0',
-  `zone_code` varchar(5) default NULL,
-  `zone_name` varchar(32) default NULL,
-  PRIMARY KEY  (`zone_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=83 ;
-
---
--- Inserting data for table `geo_zone_reference`
---
-
-INSERT INTO `geo_zone_reference` VALUES (1, 223, 'AL', 'Alabama');
-INSERT INTO `geo_zone_reference` VALUES (2, 223, 'AK', 'Alaska');
-INSERT INTO `geo_zone_reference` VALUES (3, 223, 'AS', 'American Samoa');
-INSERT INTO `geo_zone_reference` VALUES (4, 223, 'AZ', 'Arizona');
-INSERT INTO `geo_zone_reference` VALUES (5, 223, 'AR', 'Arkansas');
-INSERT INTO `geo_zone_reference` VALUES (6, 223, 'AF', 'Armed Forces Africa');
-INSERT INTO `geo_zone_reference` VALUES (7, 223, 'AA', 'Armed Forces Americas');
-INSERT INTO `geo_zone_reference` VALUES (8, 223, 'AC', 'Armed Forces Canada');
-INSERT INTO `geo_zone_reference` VALUES (9, 223, 'AE', 'Armed Forces Europe');
-INSERT INTO `geo_zone_reference` VALUES (10, 223, 'AM', 'Armed Forces Middle East');
-INSERT INTO `geo_zone_reference` VALUES (11, 223, 'AP', 'Armed Forces Pacific');
-INSERT INTO `geo_zone_reference` VALUES (12, 223, 'CA', 'California');
-INSERT INTO `geo_zone_reference` VALUES (13, 223, 'CO', 'Colorado');
-INSERT INTO `geo_zone_reference` VALUES (14, 223, 'CT', 'Connecticut');
-INSERT INTO `geo_zone_reference` VALUES (15, 223, 'DE', 'Delaware');
-INSERT INTO `geo_zone_reference` VALUES (16, 223, 'DC', 'District of Columbia');
-INSERT INTO `geo_zone_reference` VALUES (17, 223, 'FM', 'Federated States Of Micronesia');
-INSERT INTO `geo_zone_reference` VALUES (18, 223, 'FL', 'Florida');
-INSERT INTO `geo_zone_reference` VALUES (19, 223, 'GA', 'Georgia');
-INSERT INTO `geo_zone_reference` VALUES (20, 223, 'GU', 'Guam');
-INSERT INTO `geo_zone_reference` VALUES (21, 223, 'HI', 'Hawaii');
-INSERT INTO `geo_zone_reference` VALUES (22, 223, 'ID', 'Idaho');
-INSERT INTO `geo_zone_reference` VALUES (23, 223, 'IL', 'Illinois');
-INSERT INTO `geo_zone_reference` VALUES (24, 223, 'IN', 'Indiana');
-INSERT INTO `geo_zone_reference` VALUES (25, 223, 'IA', 'Iowa');
-INSERT INTO `geo_zone_reference` VALUES (26, 223, 'KS', 'Kansas');
-INSERT INTO `geo_zone_reference` VALUES (27, 223, 'KY', 'Kentucky');
-INSERT INTO `geo_zone_reference` VALUES (28, 223, 'LA', 'Louisiana');
-INSERT INTO `geo_zone_reference` VALUES (29, 223, 'ME', 'Maine');
-INSERT INTO `geo_zone_reference` VALUES (30, 223, 'MH', 'Marshall Islands');
-INSERT INTO `geo_zone_reference` VALUES (31, 223, 'MD', 'Maryland');
-INSERT INTO `geo_zone_reference` VALUES (32, 223, 'MA', 'Massachusetts');
-INSERT INTO `geo_zone_reference` VALUES (33, 223, 'MI', 'Michigan');
-INSERT INTO `geo_zone_reference` VALUES (34, 223, 'MN', 'Minnesota');
-INSERT INTO `geo_zone_reference` VALUES (35, 223, 'MS', 'Mississippi');
-INSERT INTO `geo_zone_reference` VALUES (36, 223, 'MO', 'Missouri');
-INSERT INTO `geo_zone_reference` VALUES (37, 223, 'MT', 'Montana');
-INSERT INTO `geo_zone_reference` VALUES (38, 223, 'NE', 'Nebraska');
-INSERT INTO `geo_zone_reference` VALUES (39, 223, 'NV', 'Nevada');
-INSERT INTO `geo_zone_reference` VALUES (40, 223, 'NH', 'New Hampshire');
-INSERT INTO `geo_zone_reference` VALUES (41, 223, 'NJ', 'New Jersey');
-INSERT INTO `geo_zone_reference` VALUES (42, 223, 'NM', 'New Mexico');
-INSERT INTO `geo_zone_reference` VALUES (43, 223, 'NY', 'New York');
-INSERT INTO `geo_zone_reference` VALUES (44, 223, 'NC', 'North Carolina');
-INSERT INTO `geo_zone_reference` VALUES (45, 223, 'ND', 'North Dakota');
-INSERT INTO `geo_zone_reference` VALUES (46, 223, 'MP', 'Northern Mariana Islands');
-INSERT INTO `geo_zone_reference` VALUES (47, 223, 'OH', 'Ohio');
-INSERT INTO `geo_zone_reference` VALUES (48, 223, 'OK', 'Oklahoma');
-INSERT INTO `geo_zone_reference` VALUES (49, 223, 'OR', 'Oregon');
-INSERT INTO `geo_zone_reference` VALUES (50, 223, 'PW', 'Palau');
-INSERT INTO `geo_zone_reference` VALUES (51, 223, 'PA', 'Pennsylvania');
-INSERT INTO `geo_zone_reference` VALUES (52, 223, 'PR', 'Puerto Rico');
-INSERT INTO `geo_zone_reference` VALUES (53, 223, 'RI', 'Rhode Island');
-INSERT INTO `geo_zone_reference` VALUES (54, 223, 'SC', 'South Carolina');
-INSERT INTO `geo_zone_reference` VALUES (55, 223, 'SD', 'South Dakota');
-INSERT INTO `geo_zone_reference` VALUES (56, 223, 'TN', 'Tennessee');
-INSERT INTO `geo_zone_reference` VALUES (57, 223, 'TX', 'Texas');
-INSERT INTO `geo_zone_reference` VALUES (58, 223, 'UT', 'Utah');
-INSERT INTO `geo_zone_reference` VALUES (59, 223, 'VT', 'Vermont');
-INSERT INTO `geo_zone_reference` VALUES (60, 223, 'VI', 'Virgin Islands');
-INSERT INTO `geo_zone_reference` VALUES (61, 223, 'VA', 'Virginia');
-INSERT INTO `geo_zone_reference` VALUES (62, 223, 'WA', 'Washington');
-INSERT INTO `geo_zone_reference` VALUES (63, 223, 'WV', 'West Virginia');
-INSERT INTO `geo_zone_reference` VALUES (64, 223, 'WI', 'Wisconsin');
-INSERT INTO `geo_zone_reference` VALUES (65, 223, 'WY', 'Wyoming');
-INSERT INTO `geo_zone_reference` VALUES (66, 38, 'AB', 'Alberta');
-INSERT INTO `geo_zone_reference` VALUES (67, 38, 'BC', 'British Columbia');
-INSERT INTO `geo_zone_reference` VALUES (68, 38, 'MB', 'Manitoba');
-INSERT INTO `geo_zone_reference` VALUES (69, 38, 'NF', 'Newfoundland');
-INSERT INTO `geo_zone_reference` VALUES (70, 38, 'NB', 'New Brunswick');
-INSERT INTO `geo_zone_reference` VALUES (71, 38, 'NS', 'Nova Scotia');
-INSERT INTO `geo_zone_reference` VALUES (72, 38, 'NT', 'Northwest Territories');
-INSERT INTO `geo_zone_reference` VALUES (73, 38, 'NU', 'Nunavut');
-INSERT INTO `geo_zone_reference` VALUES (74, 38, 'ON', 'Ontario');
-INSERT INTO `geo_zone_reference` VALUES (75, 38, 'PE', 'Prince Edward Island');
-INSERT INTO `geo_zone_reference` VALUES (76, 38, 'QC', 'Quebec');
-INSERT INTO `geo_zone_reference` VALUES (77, 38, 'SK', 'Saskatchewan');
-INSERT INTO `geo_zone_reference` VALUES (78, 38, 'YT', 'Yukon Territory');
-INSERT INTO `geo_zone_reference` VALUES (79, 61, 'QLD', 'Queensland');
-INSERT INTO `geo_zone_reference` VALUES (80, 61, 'SA', 'South Australia');
-INSERT INTO `geo_zone_reference` VALUES (81, 61, 'ACT', 'Australian Capital Territory');
-INSERT INTO `geo_zone_reference` VALUES (82, 61, 'VIC', 'Victoria');
-
------------------------------------------------------------
-
---
 -- Table structure for table `groups`
 --
 
@@ -2899,6 +2509,8 @@ CREATE TABLE `insurance_companies` (
   `x12_default_partner_id` int(11) default NULL,
   `alt_cms_id` varchar(15) NOT NULL DEFAULT '',
   `inactive` int(1) NOT NULL DEFAULT '0',
+  `eligibility_id` VARCHAR(32) default NULL,
+  `x12_default_eligibility_id` INT(11) default NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB;
 
@@ -3193,7 +2805,8 @@ INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`dat
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'mname', '1', '', 3, 2, 1, 2, 63, '', 0, 0, '', 'C', 'Middle Name', 0);
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'lname', '1', '', 4, 2, 2, 10, 63, '', 0, 0, '', 'CD', 'Last Name', 0);
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'pubpid', '1', 'External ID', 5, 2, 1, 10, 15, '', 1, 1, '', 'ND', 'External identifier', 0);
-INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'DOB', '1', 'DOB', 6, 4, 2, 10, 10, '', 1, 1, '', 'D', 'Date of Birth', 0);
+INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`,`validation`) VALUES ('DEM', 'DOB', '1', 'DOB', 6, 4, 2, 10, 10, '', 1, 1, '', 'D', 'Date of Birth', 0, 'past_date');
+
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'sex', '1', 'Sex', 7, 1, 2, 0, 0, 'sex', 1, 1, '', 'N', 'Sex', 0);
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'ss', '1', 'S.S.', 8, 2, 1, 11, 11, '', 1, 1, '', '', 'Social Security Number', 0);
 INSERT INTO `layout_options` (`form_id`,`field_id`,`group_id`,`title`,`seq`,`data_type`,`uor`,`fld_length`,`max_length`,`list_id`,`titlecols`,`datacols`,`default_value`,`edit_options`,`description`,`fld_rows`) VALUES ('DEM', 'drivers_license', '1', 'License/ID', 9, 2, 1, 15, 63, '', 1, 1, '', '', 'Drivers License or State ID', 0);
@@ -5094,6 +4707,7 @@ INSERT INTO `list_options` ( list_id, option_id, title) VALUES ( 'lists','LBF_Va
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`, `seq`) VALUES ('LBF_Validations','int1','Integers1-100','{\"numericality\": {\"onlyInteger\": true,\"greaterThanOrEqualTo\": 1,\"lessThanOrEqualTo\":100}}','10');
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`, `seq`) VALUES ('LBF_Validations','names','Names','{"format\":{\"pattern\":\"[a-zA-z]+([ \'-\\\\s][a-zA-Z]+)*\"}}','20');
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`, `seq`) VALUES ('LBF_Validations','past_date','Past Date','{\"pastDate\":{\"message\":\"must be past date\"}}','30');
+INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`, `seq`) VALUES ('LBF_Validations','future_date','Future Date','{\"futureDate\":{\"message\":\"must be future date\"}}','32');
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`,`seq`) VALUES ('LBF_Validations','past_year','Past Year','{\"date\":{\"dateOnly\":true},\"pastDate\":{\"onlyYear\":true}}','35');
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`,`seq`) VALUES ('LBF_Validations','email','E-Mail','{\"email\":true}','40');
 INSERT INTO `list_options` (`list_id`,`option_id`,`title`,`notes`,`seq`) VALUES ('LBF_Validations','url','URL','{\"url\":true}','50');
@@ -5130,6 +4744,13 @@ INSERT INTO list_options (`list_id`, `option_id`, `title`, `activity`)  VALUES (
 INSERT INTO list_options (list_id,option_id,title) VALUES ('lists','apps','Apps');
 INSERT INTO list_options (list_id,option_id,title,seq,is_default,activity) VALUES ('apps','*OpenEMR','main/main_screen.php',10,1,0);
 INSERT INTO list_options (list_id,option_id,title,seq,is_default,activity) VALUES ('apps','Calendar','main/calendar/index.php',20,0,0);
+INSERT INTO list_options (list_id,option_id,title,seq,is_default,activity) VALUES ('apps','oeSignerRemote','./../portal/sign/assets/signit.php',30,0,0);
+
+-- Sort Directions
+
+INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`, `activity`) VALUES ('lists', 'Sort_Direction', 'Sort Direction', 1, 0, 1);
+INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`, `activity`) VALUES ('Sort_Direction', '0', 'asc', 10, 1, 1);
+INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`, `activity`) VALUES ('Sort_Direction', '1', 'desc', 20, 0, 1);
 
 -----------------------------------------------------------
 
@@ -5243,6 +4864,8 @@ CREATE TABLE `modules` (
   `date` DATETIME NOT NULL,
   `sql_run` TINYINT(4) DEFAULT '0',
   `type` TINYINT(4) DEFAULT '0',
+  `sql_version` VARCHAR(150) NOT NULL,
+  `acl_version` VARCHAR(150) NOT NULL,
   PRIMARY KEY (`mod_id`,`mod_directory`)
 ) ENGINE=InnoDB;
 
@@ -5701,66 +5324,18 @@ CREATE TABLE `openemr_postcalendar_events` (
 -----------------------------------------------------------
 
 --
--- Table structure for table `openemr_postcalendar_limits`
---
-
-DROP TABLE IF EXISTS `openemr_postcalendar_limits`;
-CREATE TABLE `openemr_postcalendar_limits` (
-  `pc_limitid` int(11) NOT NULL auto_increment,
-  `pc_catid` int(11) NOT NULL default '0',
-  `pc_starttime` time NOT NULL default '00:00:00',
-  `pc_endtime` time NOT NULL default '00:00:00',
-  `pc_limit` int(11) NOT NULL default '1',
-  PRIMARY KEY  (`pc_limitid`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 ;
-
------------------------------------------------------------
-
---
--- Table structure for table `openemr_postcalendar_topics`
---
-
-DROP TABLE IF EXISTS `openemr_postcalendar_topics`;
-CREATE TABLE `openemr_postcalendar_topics` (
-  `pc_catid` int(11) unsigned NOT NULL auto_increment,
-  `pc_catname` varchar(100) default NULL,
-  `pc_catcolor` varchar(50) default NULL,
-  `pc_catdesc` text,
-  PRIMARY KEY  (`pc_catid`),
-  KEY `basic_cat` (`pc_catname`,`pc_catcolor`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 ;
-
------------------------------------------------------------
-
---
--- Table structure for table `openemr_session_info`
---
-
-DROP TABLE IF EXISTS `openemr_session_info`;
-CREATE TABLE `openemr_session_info` (
-  `pn_sessid` varchar(32) NOT NULL default '',
-  `pn_ipaddr` varchar(20) default NULL,
-  `pn_firstused` int(11) NOT NULL default '0',
-  `pn_lastused` int(11) NOT NULL default '0',
-  `pn_uid` int(11) NOT NULL default '0',
-  `pn_vars` blob,
-  PRIMARY KEY  (`pn_sessid`)
-) ENGINE=InnoDB;
-
------------------------------------------------------------
-
---
 -- Table structure for table `patient_access_onsite`
 --
 
 DROP TABLE IF EXISTS `patient_access_onsite`;
 CREATE TABLE `patient_access_onsite`(
-  `id` INT NOT NULL AUTO_INCREMENT ,
+  `id` INT NOT NULL AUTO_INCREMENT,
   `pid` bigint(20),
-  `portal_username` VARCHAR(100) ,
-  `portal_pwd` VARCHAR(100) ,
+  `portal_username` VARCHAR(100),
+  `portal_pwd` VARCHAR(255),
   `portal_pwd_status` TINYINT DEFAULT '1' COMMENT '0=>Password Created Through Demographics by The provider or staff. Patient Should Change it at first time it.1=>Pwd updated or created by patient itself',
-  `portal_salt` VARCHAR(100) ,
+  `portal_login_username` VARCHAR(100) DEFAULT NULL COMMENT 'User entered username',
+  `portal_onetime`  VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 )ENGINE=InnoDB AUTO_INCREMENT=1;
 
@@ -5949,7 +5524,7 @@ CREATE TABLE  `patient_access_offsite` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `pid` bigint(20) NOT NULL,
   `portal_username` varchar(100) NOT NULL,
-  `portal_pwd` varchar(100) NOT NULL,
+  `portal_pwd` varchar(255) NOT NULL,
   `portal_pwd_status` tinyint(4) DEFAULT '1' COMMENT '0=>Password Created Through Demographics by The provider or staff. Patient Should Change it at first time it.1=>Pwd updated or created by patient itself',
   `authorize_net_id` VARCHAR(20) COMMENT 'authorize.net profile id',
   `portal_relation` VARCHAR(100) NULL,
@@ -6161,6 +5736,29 @@ CREATE TABLE `prices` (
   `pr_price` decimal(12,2) NOT NULL default '0.00' COMMENT 'price in local currency',
   PRIMARY KEY  (`pr_id`,`pr_selector`,`pr_level`)
 ) ENGINE=InnoDB;
+
+-----------------------------------------------------------
+
+--
+-- Table structure for table `pro_assessments`
+--
+
+DROP TABLE IF EXISTS `pro_assessments`;
+CREATE TABLE `pro_assessments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `form_oid` varchar(255) NOT NULL COMMENT 'unique id for specific instrument, pulled from assessment center API',
+  `form_name` varchar (255) NOT NULL COMMENT 'pulled from assessment center API',
+  `user_id` int(11) NOT NULL COMMENT 'ID for user that orders the form',
+  `deadline` datetime NOT NULL COMMENT 'deadline to complete the form, will be used when sending notification and reminders',
+  `patient_id` int(11) NOT NULL COMMENT 'ID for patient to order the form for',
+  `assessment_oid` varchar(255) NOT NULL COMMENT 'unique id for this specific assessment, pulled from assessment center API',
+  `status` varchar(255) NOT NULL COMMENT 'ordered or completed',
+  `score` double NOT NULL COMMENT 'T-Score for the assessment',
+  `error` double NOT NULL COMMENT 'Standard error for the score',
+  `created_at` datetime NOT NULL COMMENT 'timestamp recording the creation time of this assessment',
+  `updated_at` datetime NOT NULL COMMENT 'this field indicates the completion time when the status is completed',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 -----------------------------------------------------------
 
@@ -7039,9 +6637,18 @@ INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_re
 ('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-Code-Descriptions.zip', '6f9c77440132e30f565222ca9bb6599c');
 INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
 ('ICD10', 'CMS', '2017-10-01', '2018-ICD-10-PCS-General-Equivalence-Mappings.zip', 'bb73c80e272da28712887d7979b1cebf');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES ('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-CM-Code-Descriptions.zip', 'b23e0128eb2dce0cb007c31638a8dc00');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES ('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-PCS-Order-File.zip', 'eb545fe61ada9efad0ad97a669f8671f');
-INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES ('CQM_VALUESET', 'NIH_VSAC', '2017-09-29', 'ep_ec_only_cms_20170929.xml.zip','38d2e1a27646f2f09fcc389fd2335c50');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-CM-Code-Descriptions.zip', 'b23e0128eb2dce0cb007c31638a8dc00');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2018-10-01', '2019-ICD-10-PCS-Order-File.zip', 'eb545fe61ada9efad0ad97a669f8671f');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('CQM_VALUESET', 'NIH_VSAC', '2017-09-29', 'ep_ec_only_cms_20170929.xml.zip', '38d2e1a27646f2f09fcc389fd2335c50');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2019-10-01', '2020-ICD-10-CM-Codes.zip', '745546b3c94af3401e84003e1b143b9b');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('ICD10', 'CMS', '2019-10-01', '2020-ICD-10-PCS-Order.zip', '8dc136d780ec60916e9e1fc999837bc8');
+INSERT INTO `supported_external_dataloads` (`load_type`, `load_source`, `load_release_date`, `load_filename`, `load_checksum`) VALUES
+('CQM_VALUESET', 'NIH_VSAC', '2018-09-17', 'ep_ec_eh_cms_20180917.xml.zip', 'a1e584714b080aced6ca73b4b7b076a1');
 -----------------------------------------------------------
 
 --
@@ -7116,9 +6723,6 @@ CREATE TABLE `users` (
   `taxonomy` varchar(30) NOT NULL DEFAULT '207Q00000X',
   `calendar` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = appears in calendar',
   `abook_type` varchar(31) NOT NULL DEFAULT '',
-  `pwd_expiration_date` date default NULL,
-  `pwd_history1` longtext,
-  `pwd_history2` longtext,
   `default_warehouse` varchar(31) NOT NULL DEFAULT '',
   `irnpool` varchar(31) NOT NULL DEFAULT '',
   `state_license_number` VARCHAR(25) DEFAULT NULL,
@@ -7149,14 +6753,15 @@ CREATE TABLE `users_secure` (
   `id` bigint(20) NOT NULL,
   `username` varchar(255) DEFAULT NULL,
   `password` varchar(255),
-  `salt` varchar(255),
+  `last_update_password` datetime DEFAULT NULL,
   `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `password_history1` varchar(255),
-  `salt_history1` varchar(255),
   `password_history2` varchar(255),
-  `salt_history2` varchar(255),
+  `password_history3` varchar(255),
+  `password_history4` varchar(255),
   `last_challenge_response` datetime DEFAULT NULL,
   `login_work_area` text,
+  `login_fail_counter` INT(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `USERNAME_ID` (`id`,`username`)
 ) ENGINE=InnoDb;
@@ -7235,7 +6840,7 @@ CREATE TABLE `x12_partners` (
   `id_number` varchar(255) default NULL,
   `x12_sender_id` varchar(255) default NULL,
   `x12_receiver_id` varchar(255) default NULL,
-  `processing_format` enum('standard','medi-cal','cms','proxymed') default NULL,
+  `processing_format` enum('standard','medi-cal','cms','proxymed','oa_eligibility','availity_eligibility') default NULL,
   `x12_isa01` VARCHAR( 2 ) NOT NULL DEFAULT '00' COMMENT 'User logon Required Indicator',
   `x12_isa02` VARCHAR( 10 ) NOT NULL DEFAULT '          ' COMMENT 'User Logon',
   `x12_isa03` VARCHAR( 2 ) NOT NULL DEFAULT '00' COMMENT 'User password required Indicator',
@@ -7246,7 +6851,7 @@ CREATE TABLE `x12_partners` (
   `x12_isa15` char(1)     NOT NULL DEFAULT 'P',
   `x12_gs02`  varchar(15) NOT NULL DEFAULT '',
   `x12_per06` varchar(80) NOT NULL DEFAULT '',
-  `x12_gs03`  varchar(15) NOT NULL DEFAULT '',
+  `x12_dtp03` char(1)     NOT NULL DEFAULT 'A',
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB;
 
@@ -7566,8 +7171,9 @@ CREATE TABLE `procedure_order` (
   `specimen_volume`        varchar(30)  NOT NULL DEFAULT '' COMMENT 'from a text input field',
   `date_transmitted`       datetime     DEFAULT NULL        COMMENT 'time of order transmission, null if unsent',
   `clinical_hx`            varchar(255) NOT NULL DEFAULT '' COMMENT 'clinical history text that may be relevant to the order',
-  `external_id` VARCHAR(20) DEFAULT NULL,
-  `history_order` enum('0','1') DEFAULT '0' COMMENT 'references order is added for history purpose only.',
+  `external_id`            varchar(20) DEFAULT NULL,
+  `history_order`          enum('0','1') DEFAULT '0' COMMENT 'references order is added for history purpose only.',
+  `order_diagnosis`        varchar(255) DEFAULT '' COMMENT 'primary order diagnosis',
   PRIMARY KEY (`procedure_order_id`),
   KEY datepid (date_ordered, patient_id),
   KEY `patient_id` (`patient_id`)
@@ -7707,12 +7313,12 @@ INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, 
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('CVX'  , 100, 100, 0, '', 0, 0, 1, 0, 1, 'CVX Immunization', 0, 0, 0, 0, 0);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('DSMIV' , 101, 101, 0, '', 0, 0, 0, 1, 0, 'DSMIV Diagnosis', 0, 1, 0, 0, 1);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('ICD10' , 102, 102, 0, '', 0, 0, 0, 1, 1, 'ICD10 Diagnosis', 1, 1, 0, 0, 1);
-INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED' , 103, 103, 0, '', 0, 0, 0, 1, 0, 'SNOMED Diagnosis', 2, 1, 0, 0, 1);
+INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED' , 103, 103, 0, '', 0, 0, 0, 1, 0, 'SNOMED Diagnosis', 10, 1, 0, 0, 1);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('CPTII' , 104, 104, 0, 'ICD9', 0, 0, 0, 0, 0, 'CPTII Performance Measures', 0, 1, 0, 0, 0);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('ICD9-SG' , 105, 105, 12, 'ICD9', 1, 0, 0, 0, 0, 'ICD9 Procedure/Service', 5, 1, 1, 0, 0);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('ICD10-PCS' , 106, 106, 12, 'ICD10', 1, 0, 0, 0, 0, 'ICD10 Procedure/Service', 6, 1, 1, 0, 0);
-INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED-CT' , 107, 107, 0, '', 0, 0, 1, 0, 0, 'SNOMED Clinical Term', 7, 0, 0, 1, 0);
-INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED-PR' , 108, 108, 0, 'SNOMED', 1, 0, 0, 0, 0, 'SNOMED Procedure', 9, 1, 1, 0, 0);
+INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED-CT' , 107, 107, 0, '', 0, 0, 1, 0, 0, 'SNOMED Clinical Term', 11, 0, 0, 1, 0);
+INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('SNOMED-PR' , 108, 108, 0, 'SNOMED', 1, 0, 0, 0, 0, 'SNOMED Procedure', 12, 1, 1, 0, 0);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem, ct_drug ) VALUES ('RXCUI', 109, 109, 0, '', 0, 0, 1, 0, 0, 'RXCUI Medication', 0, 0, 0, 0, 0, 1);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('LOINC', 110, 110, 0, '', 0, 0, 1, 0, 1, 'LOINC', 0, 0, 0, 0, 0);
 INSERT INTO code_types (ct_key, ct_id, ct_seq, ct_mod, ct_just, ct_fee, ct_rel, ct_nofs, ct_diag, ct_active, ct_label, ct_external, ct_claim, ct_proc, ct_term, ct_problem ) VALUES ('PHIN Questions', 111, 111, 0, '', 0, 0, 1, 0, 1, 'PHIN Questions', 0, 0, 0, 0, 0);
@@ -9164,18 +8770,21 @@ INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`
 ('Eye_QP_RETINA_defaults', 'ODVESSELS_CRAO', 'v: CRAO', 880, 0, 0, 'VESSELS', 'CRAO', '', 0, 0, 0, 'OD'),
 ('Eye_QP_RETINA_defaults', 'OSVESSELS_CRAO', 'v: CRAO', 890, 0, 0, 'VESSELS', 'CRAO', '', 0, 0, 0, 'OS'),
 ('Eye_QP_RETINA_defaults', 'OUVESSELS_CRAO', 'v: CRAO', 900, 0, 0, 'VESSELS', 'CRAO', '', 0, 0, 0, 'OU'),
-('Eye_QP_RETINA_defaults', 'ODPERIPH_0', 'p: clear field', 910, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OD'),
-('Eye_QP_RETINA_defaults', 'OSPERIPH_0', 'p: clear field', 920, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OS'),
-('Eye_QP_RETINA_defaults', 'OUPERIPH_0', 'p: clear field', 930, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OU'),
-('Eye_QP_RETINA_defaults', 'ODPERIPH_float', 'p: floater', 940, 0, 0, 'PERIPH', 'vitreous floater', '', 0, 0, 0, 'OD'),
-('Eye_QP_RETINA_defaults', 'OSPERIPH_float', 'p: floater', 950, 0, 0, 'PERIPH', 'vitreous floater', '', 0, 0, 0, 'OS'),
-('Eye_QP_RETINA_defaults', 'OUPERIPH_float', 'p: floater', 960, 0, 0, 'PERIPH', 'vitreous floater', '', 0, 0, 0, 'OU'),
-('Eye_QP_RETINA_defaults', 'ODPERIPH_pvd', 'p: PVD', 970, 0, 0, 'PERIPH', 'PVD', '', 0, 0, 0, 'OD'),
-('Eye_QP_RETINA_defaults', 'OSPERIPH_pvd', 'p: PVD', 980, 0, 0, 'PERIPH', 'PVD', '', 0, 0, 0, 'OS'),
-('Eye_QP_RETINA_defaults', 'OUPERIPH_pvd', 'p: PVD', 990, 0, 0, 'PERIPH', 'PVD', '', 0, 0, 0, 'OU'),
-('Eye_QP_RETINA_defaults', 'ODPERIPH_vh', 'p: vit hem', 1000, 0, 0, 'PERIPH', 'vitreous hemorrhage', '', 0, 0, 0, 'OD'),
-('Eye_QP_RETINA_defaults', 'OSPERIPH_vh', 'p: vit hem', 1010, 0, 0, 'PERIPH', 'vitreous hemorrhage', '', 0, 0, 0, 'OS'),
-('Eye_QP_RETINA_defaults', 'OUPERIPH_vh', 'p: vit hem', 1020, 0, 0, 'PERIPH', 'vitreous hemorrhage', '', 0, 0, 0, 'OU'),
+('Eye_QP_RETINA_defaults', 'ODVITREOUS_0', 'vit: clear field', 910, 0, 0, 'VITREOUS', '', '', 0, 0, 1, 'OD'),
+('Eye_QP_RETINA_defaults', 'OSVITREOUS_0', 'vit: clear field', 920, 0, 0, 'VITREOUS', '', '', 0, 0, 1, 'OS'),
+('Eye_QP_RETINA_defaults', 'OUVITREOUS_0', 'vit: clear field', 930, 0, 0, 'VITREOUS', '', '', 0, 0, 1, 'OU'),
+('Eye_QP_RETINA_defaults', 'ODVITREOUS_float', 'vit: floater', 940, 0, 0, 'VITREOUS', 'vitreous floater', '', 0, 0, 0, 'OD'),
+('Eye_QP_RETINA_defaults', 'OSVITREOUS_float', 'vit: floater', 950, 0, 0, 'VITREOUS', 'vitreous floater', '', 0, 0, 0, 'OS'),
+('Eye_QP_RETINA_defaults', 'OUVITREOUS_float', 'vit: floater', 960, 0, 0, 'VITREOUS', 'vitreous floater', '', 0, 0, 0, 'OU'),
+('Eye_QP_RETINA_defaults', 'ODVITREOUS_pvd', 'vit: PVD', 970, 0, 0, 'VITREOUS', 'PVD', '', 0, 0, 0, 'OD'),
+('Eye_QP_RETINA_defaults', 'OSVITREOUS_pvd', 'vit: PVD', 980, 0, 0, 'VITREOUS', 'PVD', '', 0, 0, 0, 'OS'),
+('Eye_QP_RETINA_defaults', 'OUVITREOUS_pvd', 'vit: PVD', 990, 0, 0, 'VITREOUS', 'PVD', '', 0, 0, 0, 'OU'),
+('Eye_QP_RETINA_defaults', 'ODVITREOUS_vh', 'vit: hemorrhage', 1000, 0, 0, 'VITREOUS', 'vitreous hemorrhage', '', 0, 0, 0, 'OD'),
+('Eye_QP_RETINA_defaults', 'OSVITREOUS_vh', 'vit: hemorrhage', 1010, 0, 0, 'VITREOUS', 'vitreous hemorrhage', '', 0, 0, 0, 'OS'),
+('Eye_QP_RETINA_defaults', 'OUVITREOUS_vh', 'vit: hemorrhage', 1020, 0, 0, 'VITREOUS', 'vitreous hemorrhage', '', 0, 0, 0, 'OU'),
+('Eye_QP_RETINA_defaults', 'ODPERIPH_0', 'p: clear field', 1022, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OD'),
+('Eye_QP_RETINA_defaults', 'OSPERIPH_0', 'p: clear field', 1024, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OS'),
+('Eye_QP_RETINA_defaults', 'OUPERIPH_0', 'p: clear field', 1026, 0, 0, 'PERIPH', '', '', 0, 0, 1, 'OU'),
 ('Eye_QP_RETINA_defaults', 'ODPERIPH_tear', 'p: retinal tear', 1030, 0, 0, 'PERIPH', 'retinal tear', '', 0, 0, 0, 'OD'),
 ('Eye_QP_RETINA_defaults', 'OSPERIPH_tear', 'p: retinal tear', 1040, 0, 0, 'PERIPH', 'retinal tear', '', 0, 0, 0, 'OS'),
 ('Eye_QP_RETINA_defaults', 'OUPERIPH_tear', 'p: retinal tear', 1050, 0, 0, 'PERIPH', 'retinal tear', '', 0, 0, 0, 'OU'),
@@ -9235,7 +8844,7 @@ INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`
 ('Eye_Defaults_for_GENERAL', 'ODIRIS', 'round', 230, 0, 0, '', 'ANTSEG', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'ODLENS', 'clear', 210, 0, 0, '', 'ANTSEG', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'ODMACULA', 'flat', 470, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
-('Eye_Defaults_for_GENERAL', 'ODPERIPH', 'flat', 510, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
+('Eye_Defaults_for_GENERAL', 'ODPERIPH', 'clear', 505, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'ODPUPILREACTIVITY', '+2', 270, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'ODPUPILSIZE1', '3', 250, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'ODPUPILSIZE2', '2', 260, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
@@ -9255,7 +8864,7 @@ INSERT INTO `list_options` (`list_id`, `option_id`, `title`, `seq`, `is_default`
 ('Eye_Defaults_for_GENERAL', 'OSIRIS', 'round', 240, 0, 0, '', 'ANTSEG', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'OSLENS', 'clear', 220, 0, 0, '', 'ANTSEG', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'OSMACULA', 'flat', 480, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
-('Eye_Defaults_for_GENERAL', 'OSPERIPH', 'flat', 520, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
+('Eye_Defaults_for_GENERAL', 'OSPERIPH', 'clear', 515, 0, 0, '', 'RETINA', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'OSPUPILREACTIVITY', '+2', 310, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'OSPUPILSIZE1', '3', 290, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
 ('Eye_Defaults_for_GENERAL', 'OSPUPILSIZE2', '2', 300, 0, 0, '', 'NEURO', '', 0, 0, 1, ''),
@@ -9920,7 +9529,7 @@ CREATE TABLE `form_eye_mag_prefs` (
   `selection` varchar(255) DEFAULT NULL,
   `ZONE_ORDER` int(11) DEFAULT NULL,
   `GOVALUE` varchar(10) DEFAULT '0',
-  `ordering` tinyint(4) DEFAULT NULL,
+  `ordering` smallint(6) DEFAULT NULL,
   `FILL_ACTION` varchar(10) NOT NULL DEFAULT 'ADD',
   `GORIGHT` varchar(50) NOT NULL,
   `GOLEFT` varchar(50) NOT NULL,
@@ -9968,8 +9577,8 @@ INSERT INTO `form_eye_mag_prefs` (`PEZONE`, `LOCATION`, `LOCATION_text`, `id`, `
 ('PREFS', 'VAX', 'Visual Acuities', 2048, 'VAX', 65, '0', 15, 'ADD', '', '', ''),
 ('PREFS', 'TOOLTIPS', 'Toggle Tooltips', 2048, 'TOOLTIPS', 66, 'on', NULL, 'ADD', '', '', ''),
 ('PREFS', 'W', 'Current Rx', 2048, 'W', 52, '1', 2, 'ADD', '', '', ''),
-('PREFS', 'W_width', 'Detailed Rx', 2048, 'W_width', 80, '100', '', '', '', '', ''),
-('PREFS', 'MR_width','Detailed MR', 2048, 'MR_width', 81, '110', '', '', '', '', '');
+('PREFS', 'W_width', 'Detailed Rx', 2048, 'W_width', 80, '100', NULL, '', '', '', ''),
+('PREFS', 'MR_width', 'Detailed MR', 2048, 'MR_width', 81, '110', NULL, '', '', '', '');
 
 -----------------------------------------------------------
 
@@ -10589,10 +10198,11 @@ CREATE TABLE `form_eye_acuity` (
   `CTLOSVA1`      varchar(25)  DEFAULT NULL,
   `PAMODVA`       varchar(25)  DEFAULT NULL,
   `PAMOSVA`       varchar(25)  DEFAULT NULL,
-  `LIODVA`        varchar(25) NOT NULL,
-  `LIOSVA`        varchar(25) NOT NULL,
+  `LIODVA`        varchar(25)  NOT NULL,
+  `LIOSVA`        varchar(25)  NOT NULL,
   `WODVANEAR`     varchar(25)  DEFAULT NULL,
   `OSVANEARCC`    varchar(25)  DEFAULT NULL,
+  `BINOCVA`       varchar(25)  DEFAULT NULL,
   PRIMARY KEY `acuity_link` (`id`),
   UNIQUE KEY `id_pid` (`id`,`pid`)
   )
@@ -10852,50 +10462,50 @@ CREATE TABLE `form_eye_neuro` (
   `id`         bigint (20) NOT NULL COMMENT 'Links to forms.form_id',
   `pid`        bigint(20)   DEFAULT NULL,
   `ACT`        char (3) NOT NULL DEFAULT 'on',
-  `ACT5CCDIST` varchar (50) DEFAULT NULL,
-  `ACT1CCDIST` varchar (50) DEFAULT NULL,
-  `ACT2CCDIST` varchar (50) DEFAULT NULL,
-  `ACT3CCDIST` varchar (50) DEFAULT NULL,
-  `ACT4CCDIST` varchar (50) DEFAULT NULL,
-  `ACT6CCDIST` varchar (50) DEFAULT NULL,
-  `ACT7CCDIST` varchar (50) DEFAULT NULL,
-  `ACT8CCDIST` varchar (50) DEFAULT NULL,
-  `ACT9CCDIST` varchar (50) DEFAULT NULL,
-  `ACT10CCDIST` varchar (50) DEFAULT NULL,
-  `ACT11CCDIST` varchar (50) DEFAULT NULL,
-  `ACT1SCDIST` varchar (50) DEFAULT NULL,
-  `ACT2SCDIST` varchar (50) DEFAULT NULL,
-  `ACT3SCDIST` varchar (50) DEFAULT NULL,
-  `ACT4SCDIST` varchar (50) DEFAULT NULL,
-  `ACT5SCDIST` varchar (50) DEFAULT NULL,
-  `ACT6SCDIST` varchar (50) DEFAULT NULL,
-  `ACT7SCDIST` varchar (50) DEFAULT NULL,
-  `ACT8SCDIST` varchar (50) DEFAULT NULL,
-  `ACT9SCDIST` varchar (50) DEFAULT NULL,
-  `ACT10SCDIST` varchar (50) DEFAULT NULL,
-  `ACT11SCDIST` varchar (50) DEFAULT NULL,
-  `ACT1SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT2SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT3SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT4SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT5CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT6CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT7CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT8CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT9CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT10CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT11CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT5SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT6SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT7SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT8SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT9SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT10SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT11SCNEAR` varchar (50) DEFAULT NULL,
-  `ACT1CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT2CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT3CCNEAR` varchar (50) DEFAULT NULL,
-  `ACT4CCNEAR` varchar (50) DEFAULT NULL,
+  `ACT5CCDIST` text,
+  `ACT1CCDIST` text,
+  `ACT2CCDIST` text,
+  `ACT3CCDIST` text,
+  `ACT4CCDIST` text,
+  `ACT6CCDIST` text,
+  `ACT7CCDIST` text,
+  `ACT8CCDIST` text,
+  `ACT9CCDIST` text,
+  `ACT10CCDIST` text,
+  `ACT11CCDIST` text,
+  `ACT1SCDIST` text,
+  `ACT2SCDIST` text,
+  `ACT3SCDIST` text,
+  `ACT4SCDIST` text,
+  `ACT5SCDIST` text,
+  `ACT6SCDIST` text,
+  `ACT7SCDIST` text,
+  `ACT8SCDIST` text,
+  `ACT9SCDIST` text,
+  `ACT10SCDIST` text,
+  `ACT11SCDIST` text,
+  `ACT1SCNEAR` text,
+  `ACT2SCNEAR` text,
+  `ACT3SCNEAR` text,
+  `ACT4SCNEAR` text,
+  `ACT5CCNEAR` text,
+  `ACT6CCNEAR` text,
+  `ACT7CCNEAR` text,
+  `ACT8CCNEAR` text,
+  `ACT9CCNEAR` text,
+  `ACT10CCNEAR` text,
+  `ACT11CCNEAR` text,
+  `ACT5SCNEAR` text,
+  `ACT6SCNEAR` text,
+  `ACT7SCNEAR` text,
+  `ACT8SCNEAR` text,
+  `ACT9SCNEAR` text,
+  `ACT10SCNEAR` text,
+  `ACT11SCNEAR` text,
+  `ACT1CCNEAR` text,
+  `ACT2CCNEAR` text,
+  `ACT3CCNEAR` text,
+  `ACT4CCNEAR`text,
   `MOTILITYNORMAL` char (3) NOT NULL DEFAULT 'on',
   `MOTILITY_RS` char (1) DEFAULT '0',
   `MOTILITY_RI` char (1) DEFAULT '0',
@@ -10915,19 +10525,19 @@ CREATE TABLE `form_eye_neuro` (
   `MOTILITY_LLIO` int (1) DEFAULT NULL,
   `NEURO_COMMENTS` text,
   `STEREOPSIS` varchar (25) DEFAULT NULL,
-  `ODNPA` varchar (50) DEFAULT NULL,
-  `OSNPA` varchar (50) DEFAULT NULL,
-  `VERTFUSAMPS` varchar (50) DEFAULT NULL,
-  `DIVERGENCEAMPS` varchar (50) DEFAULT NULL,
+  `ODNPA` text,
+  `OSNPA` text,
+  `VERTFUSAMPS` text,
+  `DIVERGENCEAMPS` text,
   `NPC` varchar (10) DEFAULT NULL,
   `DACCDIST` varchar (20) DEFAULT NULL,
   `DACCNEAR` varchar (20) DEFAULT NULL,
   `CACCDIST` varchar (20) DEFAULT NULL,
   `CACCNEAR` varchar (20) DEFAULT NULL,
-  `ODCOLOR` varchar (50) DEFAULT NULL,
-  `OSCOLOR` varchar (50) DEFAULT NULL,
-  `ODCOINS` varchar (50) DEFAULT NULL,
-  `OSCOINS` varchar (50) DEFAULT NULL,
+  `ODCOLOR` text,
+  `OSCOLOR` text,
+  `ODCOINS` text,
+  `OSCOINS` text,
   `ODREDDESAT` varchar (20) DEFAULT NULL,
   `OSREDDESAT` varchar (20) DEFAULT NULL,
   PRIMARY KEY `neuro_link` (`id`),
@@ -10982,6 +10592,7 @@ CREATE TABLE `api_token` (
     `id`           bigint(20) NOT NULL AUTO_INCREMENT,
     `user_id`      bigint(20) NOT NULL,
     `token`        varchar(256) DEFAULT NULL,
+    `token_auth` varchar(255),
     `expiry`       datetime NULL,
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB;

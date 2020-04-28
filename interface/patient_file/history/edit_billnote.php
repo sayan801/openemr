@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Billing notes.
  *
@@ -11,22 +12,23 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../../globals.php");
-require_once("$srcdir/acl.inc");
+
+use OpenEMR\Common\Acl\AclMain;
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
 
 $feid = $_GET['feid'] + 0; // id from form_encounter table
 
 $info_msg = "";
 
-if (!acl_check('acct', 'bill', '', 'write')) {
+if (!AclMain::aclCheckCore('acct', 'bill', '', 'write')) {
     die(xlt('Not authorized'));
 }
 ?>
 <html>
 <head>
-<?php html_header_show();?>
-<link rel=stylesheet href='<?php echo $css_header ?>' type='text/css'>
+<?php Header::setupHeader(); ?>
 
 <style>
 </style>
@@ -36,8 +38,8 @@ if (!acl_check('acct', 'bill', '', 'write')) {
 <body>
 <?php
 if ($_POST['form_submit'] || $_POST['form_cancel']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $fenote = trim($_POST['form_note']);
@@ -55,7 +57,7 @@ if ($_POST['form_submit'] || $_POST['form_cancel']) {
     $fenote = str_replace("\r\n", "<br />", $fenote);
     $fenote = str_replace("\n", "<br />", $fenote);
     if (! $fenote) {
-        $fenote = '['. xl('Add') . ']';
+        $fenote = '[' . xl('Add') . ']';
     }
 
     echo "<script language='JavaScript'>\n";
@@ -70,7 +72,7 @@ $fenote = $tmp['billing_note'];
 ?>
 
 <form method='post' action='edit_billnote.php?feid=<?php echo attr_url($feid); ?>' onsubmit='return top.restoreSession()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 
 <center>
 <textarea name='form_note' style='width:100%'><?php echo text($fenote); ?></textarea>

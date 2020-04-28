@@ -1,4 +1,5 @@
 <?php
+
 /**
  * types.php
  *
@@ -8,11 +9,11 @@
  * @author    Brady Miller <brady.g.miller@gmail.com>
  * @author    Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2010-2012 Rod Roark <rod@sunsetsystems.com>
- * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2018-2019 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 require_once("../globals.php");
-require_once("$srcdir/acl.inc");
 
 use OpenEMR\Core\Header;
 
@@ -29,17 +30,17 @@ $labid = isset($_GET['labid']) ? $_GET['labid'] + 0 : 0;
 //
 if ($popup && $_POST['form_save']) {
     $form_order = isset($_GET['form_order']) ? $_GET['form_order'] + 0 : 0;
-    $ptrow = sqlQuery("SELECT name FROM procedure_type WHERE " . "procedure_type_id = '$form_order'");
-    $name = addslashes($ptrow['name']);
+    $ptrow = sqlQuery("SELECT name FROM procedure_type WHERE procedure_type_id = ?", [$form_order]);
+    $name = $ptrow['name'];
     ?>
     <script type="text/javascript"
         src="<?php echo $webroot ?>/interface/main/tabs/js/include_opener.js">
     </script>
     <script language="JavaScript">
     if (opener.closed || ! opener.set_proc_type) {
-        alert('<?php echo xlt('The destination form was closed; I cannot act on your selection.'); ?>');
+        alert(<?php echo xlj('The destination form was closed; I cannot act on your selection.'); ?>);
     } else {
-        opener.set_proc_type(<?php echo "$form_order, '$name'" ?>);
+        opener.set_proc_type(<?php echo js_escape($form_order) . ", " . js_escape($name); ?>);
         <?php
             // This is to generate the "Questions at Order Entry" for the Procedure Order form.
             // GET parms needed for this are: formid, formseq.
@@ -68,21 +69,19 @@ if ($popup && $_POST['form_save']) {
 
     <title><?php echo xlt('Configure Orders and Results'); ?></title>
 
-    <style type="text/css">
+    <style>
         #con0 table {
             margin: 0;
             padding: 0;
             width: 100%;
         }
         #con0 td {
-            /*padding: 0;*/
             font-family: sans-serif;
             font-size: 11px;
             line-height: 25px;
         }
         .plusminus {
             font-family: monospace;
-            /*font-size: 11px;*/
         }
         .haskids {
             color: #0000dd;
@@ -91,14 +90,14 @@ if ($popup && $_POST['form_save']) {
         }
         tr.head {
             font-size: 14px;
-            background-color: #cccccc;
+            background-color: var(--light);
             font-weight: bold;
         }
         tr.evenrow {
-            background-color: #ddddff;
+            background-color: var(--light);
         }
         tr.oddrow {
-            background-color: #ffffff;
+            background-color: var(--white);
         }
         tr.outertr {
             padding: 0px 0px 0px 10px;
@@ -107,40 +106,33 @@ if ($popup && $_POST['form_save']) {
             line-height: 25px;
         }
         .col1 {
-            width: 33%
+            width: 33%;
         }
         .col2 {
-            width: 12%
+            width: 12%;
         }
         .col3 {
-            width: 8%
+            width: 8%;
         }
         .col4 {
-            width: 28%
+            width: 28%;
         }
         .col5 {
-            width: 5%
+            width: 5%;
         }
         .col6 {
-            width: 8%
+            width: 8%;
         }
-        
-        @media only screen and (max-width: 768px) {
-           [class*="col-"] {
-           width: 100%;
-           }
-        }
-        
     </style>
 
 
     <?php
     if ($popup) { ?>
-        <script type="text/javascript" src="../../library/topdialog.js"></script>
+        <?php Header::setupAssets('topdialog'); ?>
     <?php } ?>
 
 
-    <script language="JavaScript">
+    <script type="text/javascript">
 
     <?php
     if ($popup) {
@@ -153,7 +145,7 @@ if ($popup && $_POST['form_save']) {
     echo "preopen = [";
     echo $order > 0 ? $order : 0;
     for ($parentid = $order; $parentid > 0;) {
-        $row = sqlQuery("SELECT parent FROM procedure_type WHERE procedure_type_id = '$parentid'");
+        $row = sqlQuery("SELECT parent FROM procedure_type WHERE procedure_type_id = ?", [$parentid]);
         $parentid = $row['parent'] + 0;
         echo ", $parentid";
     }
@@ -163,7 +155,7 @@ if ($popup && $_POST['form_save']) {
 
 
     // initiate by loading the top-level nodes
-    $(document).ready(function(){
+    $(function () {
      nextOpen();
     });
 
@@ -177,7 +169,7 @@ if ($popup && $_POST['form_save']) {
        if (thisid > 0)
         toggle(thisid);
        else
-        $.getScript('types_ajax.php?id=' + thisid + '&order=<?php echo $order; ?>' + '&labid=<?php echo $labid; ?>');
+        $.getScript('types_ajax.php?id=' + encodeURIComponent(thisid) + '&order=' + <?php echo js_url($order); ?> + '&labid=' + <?php echo js_url($labid); ?>);
       }
       else {
        recolor();
@@ -209,7 +201,7 @@ if ($popup && $_POST['form_save']) {
       td1.parent().after('<tr class="outertr"><td colspan="7" id="con' + id + '" style="padding:0">Loading...</td></tr>');
       td1.addClass('isExpanded');
       swapsign(td1, '+', '-');
-      $.getScript('types_ajax.php?id=' + id + '&order=<?php echo $order; ?>' + '&labid=<?php echo $labid; ?>');
+      $.getScript('types_ajax.php?id=' + encodeURIComponent(id) + '&order=' + <?php echo js_url($order); ?> + '&labid=' + <?php echo js_url($labid); ?>);
      }
     }
 
@@ -240,22 +232,22 @@ if ($popup && $_POST['form_save']) {
       }
      }
      if (haskids)
-      $.getScript('types_ajax.php?id=' + id + '&order=<?php echo $order; ?>' + '&labid=<?php echo $labid; ?>');
+      $.getScript('types_ajax.php?id=' + encodeURIComponent(id) + '&order=' + <?php echo js_url($order); ?> + '&labid=' + <?php echo js_url($labid); ?>);
      else
       recolor();
     }
 
     // edit/add a node
     function handleNode(id, type, add, lab) {
-        var editTitle = '<i class="fa fa-pencil" style="width:20px;" aria-hidden="true"></i> ' + '<?php echo xlt("Edit Mode"); ?> ';
-        var addTitle = '<i class="fa fa-plus" style="width:20px;" aria-hidden="true"></i> ' + '<?php echo xlt("Add Mode"); ?>';
+        var editTitle = '<i class="fa fa-pencil-alt" style="width:20px;" aria-hidden="true"></i> ' + <?php echo xlj("Edit Mode"); ?> + ' ';
+        var addTitle = '<i class="fa fa-plus" style="width:20px;" aria-hidden="true"></i> ' + <?php echo xlj("Add Mode"); ?>;
         if (type > 0) {
             type = (type === 1 && !add) ? 'fgp' : 'for';
         }
-        let url = 'types_edit.php?addfav=' + type + '&labid=' + lab + '&parent=0&typeid=' + id;
-        
+        let url = 'types_edit.php?addfav=' + encodeURIComponent(type) + '&labid=' + encodeURIComponent(lab) + '&parent=0&typeid=' + encodeURIComponent(id);
+
         if (add) {
-            url = 'types_edit.php?addfav=' + type + '&labid=' + lab + '&typeid=0&parent=' + id;
+            url = 'types_edit.php?addfav=' + encodeURIComponent(type) + '&labid=' + encodeURIComponent(lab) + '&typeid=0&parent=' + encodeURIComponent(id);
             dlgopen(url, '_blank', 800, 750, false, addTitle);
         } else {
             dlgopen(url, '_blank', 800, 750, false, editTitle);
@@ -281,7 +273,7 @@ if ($popup && $_POST['form_save']) {
 
 </head>
 
-<body class="body_nav">
+<body>
     <?php
     if ($GLOBALS['enable_help'] == 1) {
         $help_icon = '<a class="oe-pull-away oe-help-redirect" data-target="#myModal" data-toggle="modal" href="#" id="help-href" name="help-href" style="color:#676666" title="' . xla("Click to view Help") . '"><i class="fa fa-question-circle" aria-hidden="true"></i></a>';
@@ -302,24 +294,24 @@ if ($popup && $_POST['form_save']) {
         <div class="row">
             <div class="col-sm-12">
                 <form method='post' name='theform'
-                    action='types.php?popup=<?php echo $popup ?>&order=<?php
-                    echo $order;
+                    action='types.php?popup=<?php echo attr_url($popup); ?>&order=<?php
+                    echo attr_url($order);
                     if (isset($_GET['formid'])) {
-                        echo '&formid=' . $_GET['formid'];
+                        echo '&formid=' . attr_url($_GET['formid']);
                     }
 
                     if (isset($_GET['formseq'])) {
-                        echo '&formseq=' . $_GET['formseq'];
+                        echo '&formseq=' . attr_url($_GET['formseq']);
                     }
                     ?>'>
                     <div class="btn-group">
-                        <button type="button" name="form_search" class="btn btn-default btn-refresh" onclick="refreshme()"><?php echo xlt('Refresh');?></button>
-                        <button type="button" class="btn btn-default btn-add" name='add_node_btn' id='add_node_button'  onclick='handleNode(0,"","")'><?php echo xlt('Add Top Level');?></button>
+                        <button type="button" name="form_search" class="btn btn-secondary btn-refresh" onclick="refreshme()"><?php echo xlt('Refresh');?></button>
+                        <button type="button" class="btn btn-secondary btn-add" name='add_node_btn' id='add_node_button'  onclick='handleNode(0,"",true,"")'><?php echo xlt('Add Top Level');?></button>
                     </div>
-                    <br>
-                    <br>
+                    <br />
+                    <br />
                     <div class = "table-responsive">
-                        <table class="table" style="margin-bottom:0">
+                        <table class="table mb-0">
                             <thead>
                                 <tr class='head'>
                                     <td class='col1' align='left'>&nbsp;&nbsp;<?php echo xlt('Name') ?> <i id="name-tooltip" class="fa fa-info-circle oe-text-black" aria-hidden="true"></i></td>
@@ -339,7 +331,7 @@ if ($popup && $_POST['form_save']) {
                         <div class="col-sm-12 text-left position-override">
                             <div class="btn-group btn-group-pinch" role="group">
                                 <?php if ($popup) { ?>
-                                    <button type="submit" class="btn btn-default btn-save" name='form_save' value='<?php echo xla('Save'); ?>'><?php echo xlt('Save');?></button>
+                                    <button type="submit" class="btn btn-secondary btn-save" name='form_save' value='<?php echo xla('Save'); ?>'><?php echo xlt('Save');?></button>
                                     <button class="btn btn-link btn-cancel btn-separate-left" onclick="CancelDistribute()"><?php echo xlt('Cancel');?></button>
                                 <?php } ?>
                             </div>
@@ -349,7 +341,7 @@ if ($popup && $_POST['form_save']) {
             </div>
         </div>
     </div><!--End of Container div-->
-   <br>
+   <br />
     <?php
     //home of the help modal ;)
     //$GLOBALS['enable_help'] = 0; // Please comment out line if you want help modal to function on this page
@@ -361,16 +353,15 @@ if ($popup && $_POST['form_save']) {
     ?>
     <script>
     //jqury-ui tooltip
-        $(document).ready(function(){
+        $(function () {
             //for jquery tooltip to function if jquery 1.12.1.js is called via jquery-ui in the Header::setupHeader
             // the relevant css file needs to be called i.e. jquery-ui-darkness - to get a black tooltip
-            $('#name-tooltip').attr( "title", "<?php echo xla('The actual tests or procedures that can be searched for and ordered are highlighted in yellow'); ?>" +  ". "  + "<?php echo xla('Click on the blue plus sign under Name to reveal test names'); ?>").tooltip();
-            $('#order-tooltip').attr( "title", "<?php echo xla('The entries highlighted in yellow can be ordered as a test or procedure those highlighted in pink can be ordered as a Custom Group'); ?>" +  ". "  + "<?php echo xla('Click on the blue plus sign under Name to reveal test names'); ?>"  ).tooltip();
-            $('#code-tooltip').attr( "title", "<?php echo xla('Category - Order, Result and Recommendation need an identifying code');?>" + ". " + "<?php echo xla('Red Triangle indicates a required code that is missing')?>.").
-            tooltip();
-            $('#tier-tooltip').attr( "title", "<?php echo xla('Shows the hierarchal level of this line');?>" + ". " + "<?php echo xla('Tier 1 entries should be of Category Top Group')?>.").
-            tooltip();
-            $('table td .required-tooltip').attr( "title", "<?php echo xla('For proper tabulated display of tests and results an identifying code is required'); ?>").tooltip();
+            $('#name-tooltip').attr({"title": <?php echo xlj('The actual tests or procedures that can be searched for and ordered are highlighted in yellow'); ?> +  ". "  + <?php echo xlj('Click on the blue plus sign under Name to reveal test names'); ?>, "data-toggle":"tooltip", "data-placement":"bottom"}).tooltip();
+            $('#order-tooltip').attr({"title": <?php echo xlj('The entries highlighted in yellow can be ordered as a test or procedure those highlighted in pink can be ordered as a Custom Group'); ?> +  ". "  + <?php echo xlj('Click on the blue plus sign under Name to reveal test names'); ?>, "data-toggle":"tooltip", "data-placement":"bottom"}).tooltip();
+            $('#code-tooltip').attr({"title": <?php echo xlj('Category - Order, Result and Recommendation need an identifying code');?> + ". " + <?php echo xlj('Red Triangle indicates a required code that is missing')?> + ".", "data-toggle":"tooltip", "data-placement":"bottom"}).tooltip();
+            $('#tier-tooltip').attr({"title": <?php echo xlj('Shows the hierarchal level of this line');?> + ". " + <?php echo xlj('Tier 1 entries should be of Category Top Group')?> + ".", "data-toggle":"tooltip", "data-placement":"bottom"}).tooltip();
+            $('table td .required-tooltip').attr({"title": <?php echo xlj('For proper tabulated display of tests and results an identifying code is required'); ?>, "data-toggle":"tooltip", "data-placement":"bottom"}).tooltip();
+
             $("table td .required-tooltip").fadeIn(500);
             $("table td .required-tooltip3").fadeOut(1000);
             $("table td .required-tooltip").fadeIn(500);

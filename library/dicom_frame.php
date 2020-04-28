@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Dicom viewer wrapper script for documents
  *
@@ -8,7 +9,7 @@
  * @author  Victor Kofia <https://kofiav.com> 'Viewer'
  * @copyright Copyright (c) 2018 Jerry Padgett <sjpadgett@gmail.com>
  * @copyright Copyright (c) 2017-2018 Victor Kofia <https://kofiav.com>
- * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 /* Warning: This script wraps the Dicom viewer which is HTML5 compatible only and bootstrap styling
@@ -16,6 +17,8 @@
 */
 
 require_once('../interface/globals.php');
+
+use OpenEMR\Core\Header;
 
 $web_path = $_REQUEST['web_path'];
 $patid = $_REQUEST['patient_id'];
@@ -26,31 +29,13 @@ if ($d->get_mimetype() == 'application/dicom+zip') {
     $type = '.zip';
 }
 
-$web_path .= '&retrieve&patient_id=' . attr($patid) . '&document_id=' . attr($docid) . '&as_file=false&type=' . attr($type);
+$web_path = attr($web_path) . '&retrieve&patient_id=' . attr_url($patid) . '&document_id=' . attr_url($docid) . '&as_file=false&type=' . attr_url($type);
 
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/manual-added-packages/modernizr-3-5-0/dist/modernizr-build.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/i18next/dist/umd/i18next.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/i18next-xhr-backend/dist/umd/i18nextXHRBackend.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/i18next-browser-languagedetector/dist/umd/i18nextBrowserLanguageDetector.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/konva/konva.min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/magic-wand-js/js/magic-wand-min.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jszip/dist/jszip.min.js"></script>
-    <!-- Third party (viewer) -->
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/flot/jquery.flot.js"></script>
-    <!-- decoders -->
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/decoders/pdfjs/jpx.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/decoders/pdfjs/util.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/decoders/pdfjs/arithmetic_decoder.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/decoders/pdfjs/jpg.js"></script>
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/decoders/rii-mango/lossless-min.js"></script>
-    <!-- Local (dwv) -->
-    <script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/dwv/dist/dwv.min.js"></script>
+    <?php Header::setupHeader(['dwv', 'i18next', 'i18next-xhr-backend', 'i18next-browser-languagedetector', 'jszip', 'magic-wand', 'konva']); ?>
     <!-- i18n dwv wrapper -->
     <script type="text/javascript" src="<?php echo $GLOBALS['web_root']?>/library/js/dwv/dwv_i18n.js"></script>
 </head>
@@ -130,7 +115,7 @@ $web_path .= '&retrieve&patient_id=' . attr($patid) . '&document_id=' . attr($do
     <script type="text/javascript" src="<?php echo $GLOBALS['web_root'] ?>/library/js/dwv/dicom_gui.js"></script>
     <script type="text/javascript" src="<?php echo $GLOBALS['web_root'] ?>/library/js/dwv/dicom_launcher.js"></script>
     <script>
-        var msg = '<?php echo xlt("Still Loading...") ?>';
+        var msg = <?php echo xlj("Still Loading...") ?>;
         var canvas = document.getElementById("dwvimg");
         var ctx = canvas.getContext("2d");
         ctx.font = "22px Arial";

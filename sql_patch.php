@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2008-2010 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -11,13 +12,10 @@
 // for the new release.
 
 // Checks if the server's PHP version is compatible with OpenEMR:
-require_once(dirname(__FILE__) . "/common/compatibility/Checker.php");
-
-use OpenEMR\Common\Checker;
-
-$response = Checker::checkPhpVersion();
+require_once(dirname(__FILE__) . "/src/Common/Compatibility/Checker.php");
+$response = OpenEMR\Common\Compatibility\Checker::checkPhpVersion();
 if ($response !== true) {
-    die($response);
+    die(htmlspecialchars($response));
 }
 
 // Disable PHP timeout.  This will not work in safe mode.
@@ -45,7 +43,7 @@ $desiredVersion->setMinor($v_minor);
 $desiredVersion->setMajor($v_major);
 
 // Force logging off
-$GLOBALS["enable_auditlog"]=0;
+$GLOBALS["enable_auditlog"] = 0;
 
 $EMRversion = trim(preg_replace('/\s*\([^)]*\)/', '', $GLOBALS['openemr_version']));
 ?>
@@ -70,6 +68,7 @@ $EMRversion = trim(preg_replace('/\s*\([^)]*\)/', '', $GLOBALS['openemr_version'
     flush();
 
     echo '<p style="font-weight:bold; text-align:left; color:green">',xlt('Updating global configuration defaults'),'...</p>';
+    $skipGlobalEvent = true; //use in globals.inc.php script to skip event stuff
     require_once("library/globals.inc.php");
     foreach ($GLOBALS_METADATA as $grpname => $grparr) {
         foreach ($grparr as $fldid => $fldarr) {
@@ -96,9 +95,9 @@ $EMRversion = trim(preg_replace('/\s*\([^)]*\)/', '', $GLOBALS['openemr_version'
 
     echo '<p style="text-align:center; font-size:1.8em;">',xlt('Database Patch'),' ',text($desiredVersion->getRealPatch()),' ',xlt('finished'),'.</p>';
 
-    echo '<p style="text-align:center; font-size:1.8em;">OpenEMR ',xlt('Version'),' = ',text($EMRversion.'('.$desiredVersion->getRealPatch().')'),'.</p>';
+    echo '<p style="text-align:center; font-size:1.8em;">OpenEMR ',xlt('Version'),' = ',text($EMRversion . '(' . $desiredVersion->getRealPatch() . ')'),'.</p>';
 
-    echo '<p><a style="border-radius: 10px; padding:5px; width:200px; margin:0 auto; background-color:green; color:white; font-weight:bold; display:block; text-align:center;" href="index.php?site=',attr($_SESSION['site_id']).'">',xlt('Log in'),'</a></p>';
+    echo '<p><a style="border-radius: 10px; padding:5px; width:200px; margin:0 auto; background-color:green; color:white; font-weight:bold; display:block; text-align:center;" href="index.php?site=',attr($_SESSION['site_id']) . '">',xlt('Log in'),'</a></p>';
 
     if (isset($_SERVER['HTTP_REFERER'])) {
         $split = preg_split('/\//', $_SERVER['HTTP_REFERER']);

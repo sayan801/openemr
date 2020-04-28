@@ -1,4 +1,5 @@
 <?php
+
 /**
  * While creating new encounter this code is used to change the "Billing Facility:".
  * This happens on change of the "Facility:" field.
@@ -13,12 +14,13 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../../interface/globals.php");
 require_once("$srcdir/options.inc.php");
 
-if (!verifyCsrfToken($_REQUEST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_REQUEST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 if ($_GET['mode'] == 'get_pos') {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  *  $Id$
  *
@@ -24,14 +25,11 @@
  *  http://www.gnu.org/copyleft/gpl.html
  *
  */
+
 $modversion['name']             = 'PostCalendar';
 $modversion['id']               = '44';
 $modversion['version']          = '4.0.0';
 $modversion['description']      = 'PostNuke Calendar Module Modified for OpenEMR';
-$modversion['credits']          = 'docs/credits.txt';
-$modversion['help']             = 'docs/help.txt';
-$modversion['changelog']        = 'docs/changelog.txt';
-$modversion['license']          = 'docs/license.txt';
 $modversion['official']         = 0;
 $modversion['author']           = 'The PostCalendar Team & Pennington Firm';
 $modversion['contact']          = 'http://www.pennfirm.com';

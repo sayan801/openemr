@@ -1,4 +1,5 @@
 <?php
+
 /**
  * bronchitis report.php
  *
@@ -11,13 +12,14 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
-require_once("../../globals.php");
+require_once(__DIR__ . "/../../globals.php");
 require_once("$srcdir/api.inc");
 require_once("$srcdir/forms.inc");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 if ($encounter == "") {
@@ -28,7 +30,7 @@ if ($_GET["mode"] == "new") {
     $newid = formSubmit("form_bronchitis", $_POST, $_GET["id"], $userauthorized);
     addForm($encounter, "Bronchitis Form", $newid, "bronchitis", $pid, $userauthorized);
 } elseif ($_GET["mode"] == "update") {
-    sqlInsert(
+    sqlStatement(
         "update form_bronchitis set pid = ?, 
             groupname = ?,
             user = ?,

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Sports Physical Form
  *
@@ -10,9 +11,11 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../../globals.php");
 require_once("$srcdir/api.inc");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
 
 /** CHANGE THIS - name of the database table associated with this form **/
 $table_name = "form_example";
@@ -23,7 +26,7 @@ $form_name = "My Example Form";
 /** CHANGE THIS to match the folder you created for this form **/
 $form_folder = "example";
 
-formHeader("Form: ".$form_name);
+formHeader("Form: " . $form_name);
 $returnurl = 'encounter_top.php';
 
 /* load the saved record */
@@ -47,21 +50,14 @@ if ($record['sig_date'] != "") {
 ?>
 
 <html><head>
-<?php html_header_show();?>
 
-<!-- supporting javascript code -->
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['webroot'] ?>/library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+<?php Header::setupHeader('datetime-picker'); ?>
 
-<!-- page styles -->
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
 <link rel="stylesheet" href="../../forms/<?php echo $form_folder; ?>/style.css?v=<?php echo $v_js_includes; ?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
 
 <script language="JavaScript">
 function PrintForm() {
-    newwin = window.open("<?php echo "http://".$_SERVER['SERVER_NAME'].$rootdir."/forms/".$form_folder."/print.php?id=" ?>" + <?php echo js_url($_GET["id"]); ?>,"mywin");
+    newwin = window.open("<?php echo "http://" . $_SERVER['SERVER_NAME'] . $rootdir . "/forms/" . $form_folder . "/print.php?id=" ?>" + <?php echo js_url($_GET["id"]); ?>,"mywin");
 }
 </script>
 
@@ -72,9 +68,9 @@ function PrintForm() {
 <?php echo date("F d, Y", time()); ?>
 
 <form method=post action="<?php echo $rootdir;?>/forms/<?php echo $form_folder; ?>/save.php?mode=update&id=<?php echo attr_url($_GET["id"]);?>" name="my_form">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 
-<span class="title"><?php echo xlt($form_name); ?></span><br>
+<span class="title"><?php echo xlt($form_name); ?></span><br />
 
 <!-- Save/Cancel links -->
 <input type="button" class="save" value="<?php echo xla('Save Changes'); ?>"> &nbsp;
@@ -110,18 +106,18 @@ Address: <input name="address" id="address" type="text" size="80" maxlength="250
 </div>
 
 <div id="bottom">
-Use this space to express notes <br>
+Use this space to express notes <br />
 <textarea name="notes" id="notes" cols="80" rows="4"><?php echo attr($record['notes']);?></textarea>
-<br><br>
+<br /><br />
 <div style="text-align:right;">
 Signature?
 <input type="radio" id="sig" name="sig" value="y" <?php if ($record["sig"] == 'y') {
     echo "CHECKED";
-} ?>>Yes
+                                                  } ?>>Yes
 /
 <input type="radio" id="sig" name="sig" value="n" <?php if ($record["sig"] == 'n') {
     echo "CHECKED";
-} ?>>No
+                                                  } ?>>No
 &nbsp;&nbsp;
 Date of signature:
    <input type='text' size='10' class='datepicker' name='sig_date' id='sig_date'
@@ -143,7 +139,7 @@ Date of signature:
 <script language="javascript">
 // jQuery stuff to make the page a little easier to use
 
-$(document).ready(function(){
+$(function () {
     $(".save").click(function() { top.restoreSession(); document.my_form.submit(); });
     $(".dontsave").click(function() { parent.closeTab(window.name, false); });
     $(".printform").click(function() { PrintForm(); });

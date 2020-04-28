@@ -1,6 +1,14 @@
 <?php
-require_once(dirname(__FILE__) . "/../lists.inc");
-//below is required for the set_medication() function
+
+/**
+ * Prescription.class.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 // Below list of terms are deprecated, but we keep this list
 //   to keep track of the official openemr drugs terms and
@@ -71,28 +79,17 @@ require_once(dirname(__FILE__) . "/../lists.inc");
 // define('SUBSTITUTE_NO',2);
 //
 
-// Added 7-2009 by BM to incorporate the units, forms, interval, route lists from list_options
-//  This mechanism may only be temporary; will likely migrate changes more downstream to allow
-//   users the options of using the addlist widgets and validation frunctions from options.inc.php
-//   in the forms and output.
-function load_drug_attributes($id)
-{
-    $res = sqlStatement("SELECT * FROM list_options WHERE list_id = ? AND activity = 1 ORDER BY seq", array($id));
-    while ($row = sqlFetchArray($res)) {
-        if ($row['title'] == '') {
-             $arr[$row['option_id']] = ' ';
-        } else {
-             $arr[$row['option_id']] = xl_list_label($row['title']);
-        }
-    }
 
-    return $arr;
-}
+require_once(dirname(__FILE__) . "/../lists.inc");
+
 
 /**
  * class Prescription
  *
  */
+
+use OpenEMR\Common\ORDataObject\ORDataObject;
+
 class Prescription extends ORDataObject
 {
 
@@ -152,14 +149,10 @@ class Prescription extends ORDataObject
 
     function __construct($id = "", $_prefix = "")
     {
-
-    // Modified 7-2009 by BM to load the arrays from the lists in lists_options.
-    // Plan for this to only be temporary, hopefully have the lists used directly
-    //  from forms in future to allow use of widgets etc.
-        $this->route_array = load_drug_attributes('drug_route');
-        $this->form_array = load_drug_attributes('drug_form');
-        $this->interval_array = load_drug_attributes('drug_interval');
-        $this->unit_array = load_drug_attributes('drug_units');
+        $this->route_array = $this->load_drug_attributes('drug_route');
+        $this->form_array = $this->load_drug_attributes('drug_form');
+        $this->interval_array = $this->load_drug_attributes('drug_interval');
+        $this->unit_array = $this->load_drug_attributes('drug_units');
 
         $this->substitute_array = array("",xl("substitution allowed"),
             xl("do not substitute"));
@@ -183,7 +176,7 @@ class Prescription extends ORDataObject
             $this->_table = "prescriptions";
             $this->pharmacy = new Pharmacy();
             $this->pharmacist = new Person();
-            $this->provider = new Provider($_SESSION['authId']);
+            $this->provider = new Provider($_SESSION['authUserID']);
             $this->patient = new Patient();
             $this->start_date = date("Y-m-d");
             $this->date_added = date("Y-m-d");
@@ -196,7 +189,7 @@ class Prescription extends ORDataObject
 
         $this->ntx = 0;
 
-        for ($i=0; $i<21; $i++) {
+        for ($i = 0; $i < 21; $i++) {
             $this->refills_array[$i] = sprintf("%02d", $i);
         }
 
@@ -224,35 +217,35 @@ class Prescription extends ORDataObject
     function toString($html = false)
     {
         $string .= "\n"
-            ."ID: " . $this->id . "\n"
-            ."Patient:" . $this->patient . "\n"
-            ."Patient ID:" . $this->patient->id . "\n"
-            ."Pharmacist: " . $this->pharmacist . "\n"
-            ."Pharmacist ID: " . $this->pharmacist->id . "\n"
-            ."Date Added: " . $this->date_added. "\n"
-            ."Date Modified: " . $this->date_modified. "\n"
-            ."Pharmacy: " . $this->pharmacy. "\n"
-            ."Pharmacy ID:" . $this->pharmacy->id . "\n"
-            ."Start Date: " . $this->start_date. "\n"
-            ."Filled Date: " . $this->filled_date. "\n"
-            ."Provider: " . $this->provider. "\n"
-            ."Provider ID: " . $this->provider->id. "\n"
-            ."Note: " . $this->note. "\n"
-            ."Drug: " . $this->drug. "\n"
-          ."Code: " . $this->rxnorm_drugcode. "\n"
-            ."Form: " . $this->form_array[$this->form]. "\n"
-            ."Dosage: " . $this->dosage. "\n"
-            ."Qty: " . $this->quantity. "\n"
-            ."Size: " . $this->size. "\n"
-            ."Unit: " . $this->unit_array[$this->unit] . "\n"
-            ."Route: " . $this->route_array[$this->route] . "\n"
-            ."Interval: " .$this->interval_array[$this->interval]. "\n"
-            ."Substitute: " . $this->substitute_array[$this->substitute]. "\n"
-            ."Refills: " . $this->refills. "\n"
-            ."Per Refill: " . $this->per_refill . "\n"
-            ."Drug ID: " . $this->drug_id . "\n"
-            ."Active: " . $this->active . "\n"
-            ."Transmitted: " . $this->ntx;
+            . "ID: " . $this->id . "\n"
+            . "Patient:" . $this->patient . "\n"
+            . "Patient ID:" . $this->patient->id . "\n"
+            . "Pharmacist: " . $this->pharmacist . "\n"
+            . "Pharmacist ID: " . $this->pharmacist->id . "\n"
+            . "Date Added: " . $this->date_added . "\n"
+            . "Date Modified: " . $this->date_modified . "\n"
+            . "Pharmacy: " . $this->pharmacy . "\n"
+            . "Pharmacy ID:" . $this->pharmacy->id . "\n"
+            . "Start Date: " . $this->start_date . "\n"
+            . "Filled Date: " . $this->filled_date . "\n"
+            . "Provider: " . $this->provider . "\n"
+            . "Provider ID: " . $this->provider->id . "\n"
+            . "Note: " . $this->note . "\n"
+            . "Drug: " . $this->drug . "\n"
+          . "Code: " . $this->rxnorm_drugcode . "\n"
+            . "Form: " . $this->form_array[$this->form] . "\n"
+            . "Dosage: " . $this->dosage . "\n"
+            . "Qty: " . $this->quantity . "\n"
+            . "Size: " . $this->size . "\n"
+            . "Unit: " . $this->unit_array[$this->unit] . "\n"
+            . "Route: " . $this->route_array[$this->route] . "\n"
+            . "Interval: " . $this->interval_array[$this->interval] . "\n"
+            . "Substitute: " . $this->substitute_array[$this->substitute] . "\n"
+            . "Refills: " . $this->refills . "\n"
+            . "Per Refill: " . $this->per_refill . "\n"
+            . "Drug ID: " . $this->drug_id . "\n"
+            . "Active: " . $this->active . "\n"
+            . "Transmitted: " . $this->ntx;
 
         if ($html) {
             return nl2br($string);
@@ -260,6 +253,21 @@ class Prescription extends ORDataObject
             return $string;
         }
     }
+
+    private function load_drug_attributes($id)
+    {
+        $res = sqlStatement("SELECT * FROM list_options WHERE list_id = ? AND activity = 1 ORDER BY seq", array($id));
+        while ($row = sqlFetchArray($res)) {
+            if ($row['title'] == '') {
+                $arr[$row['option_id']] = ' ';
+            } else {
+                $arr[$row['option_id']] = xl_list_label($row['title']);
+            }
+        }
+
+        return $arr;
+    }
+
     function get_encounter()
     {
         return $_SESSION['encounter'];
@@ -398,27 +406,27 @@ class Prescription extends ORDataObject
         }
 
         //below statements are bypassing the persist() function and being used directly in database statements, hence need to use the functions in library/formdata.inc.php
-    // they have already been run through populate() hence stripped of escapes, so now need to be escaped for database (add_escape_custom() function).
+        // they have already been run through populate() hence stripped of escapes, so now need to be escaped for database (add_escape_custom() function).
 
         //check if this drug is on the medication list
-        $dataRow = sqlQuery("select id from lists where type = 'medication' and activity = 1 and (enddate is null or cast(now() as date) < enddate) and upper(trim(title)) = upper(trim('" . add_escape_custom($this->drug) . "')) and pid = " . add_escape_custom($this->patient->id) . ' limit 1');
+        $dataRow = sqlQuery("select id from lists where type = 'medication' and activity = 1 and (enddate is null or cast(now() as date) < enddate) and upper(trim(title)) = upper(trim('" . add_escape_custom($this->drug) . "')) and pid = '" . add_escape_custom($this->patient->id) . "' limit 1");
 
         if ($med && !isset($dataRow['id'])) {
-            $dataRow = sqlQuery("select id from lists where type = 'medication' and activity = 0 and (enddate is null or cast(now() as date) < enddate) and upper(trim(title)) = upper(trim('" . add_escape_custom($this->drug) . "')) and pid = " . add_escape_custom($this->patient->id) . ' limit 1');
+            $dataRow = sqlQuery("select id from lists where type = 'medication' and activity = 0 and (enddate is null or cast(now() as date) < enddate) and upper(trim(title)) = upper(trim('" . add_escape_custom($this->drug) . "')) and pid = '" . add_escape_custom($this->patient->id) . "' limit 1");
 
             if (!isset($dataRow['id'])) {
                 //add the record to the medication list
-                sqlInsert("insert into lists(date,begdate,type,activity,pid,user,groupname,title) values (now(),cast(now() as date),'medication',1," . add_escape_custom($this->patient->id) . ",'" . $$_SESSION['authUser']. "','" . $$_SESSION['authProvider'] . "','" . add_escape_custom($this->drug) . "')");
+                sqlStatement("insert into lists(date,begdate,type,activity,pid,user,groupname,title) values (now(),cast(now() as date),'medication',1,'" . add_escape_custom($this->patient->id) . "','" . add_escape_custom($$_SESSION['authUser']) . "','" . add_escape_custom($$_SESSION['authProvider']) . "','" . add_escape_custom($this->drug) . "')");
             } else {
                 $dataRow = sqlQuery('update lists set activity = 1'
-                            . " ,user = '" . $$_SESSION['authUser']
-                            . "', groupname = '" . $$_SESSION['authProvider'] . "' where id = " . $dataRow['id']);
+                            . " ,user = '" . add_escape_custom($$_SESSION['authUser'])
+                            . "', groupname = '" . add_escape_custom($$_SESSION['authProvider']) . "' where id = '" . add_escape_custom($dataRow['id']) . "'");
             }
         } elseif (!$med && isset($dataRow['id'])) {
             //remove the drug from the medication list if it exists
             $dataRow = sqlQuery('update lists set activity = 0'
-                            . " ,user = '" . $$_SESSION['authUser']
-                            . "', groupname = '" . $$_SESSION['authProvider'] . "' where id = " . $dataRow['id']);
+                            . " ,user = '" . add_escape_custom($$_SESSION['authUser'])
+                            . "', groupname = '" . add_escape_custom($$_SESSION['authProvider']) . "' where id = '" . add_escape_custom($dataRow['id']) . "'");
         }
     }
 
@@ -499,7 +507,7 @@ class Prescription extends ORDataObject
         if (is_numeric($year)) {
             $ymd = explode("-", $this->start_date);
             $ymd[0] = $year;
-            $this->start_date = $ymd[0] ."-" . $ymd[1] ."-" . $ymd[2];
+            $this->start_date = $ymd[0] . "-" . $ymd[1] . "-" . $ymd[2];
         }
     }
     function get_start_date_m()
@@ -512,7 +520,7 @@ class Prescription extends ORDataObject
         if (is_numeric($month)) {
             $ymd = explode("-", $this->start_date);
             $ymd[1] = $month;
-            $this->start_date = $ymd[0] ."-" . $ymd[1] ."-" . $ymd[2];
+            $this->start_date = $ymd[0] . "-" . $ymd[1] . "-" . $ymd[2];
         }
     }
     function get_start_date_d()
@@ -525,7 +533,7 @@ class Prescription extends ORDataObject
         if (is_numeric($day)) {
             $ymd = explode("-", $this->start_date);
             $ymd[2] = $day;
-            $this->start_date = $ymd[0] ."-" . $ymd[1] ."-" . $ymd[2];
+            $this->start_date = $ymd[0] . "-" . $ymd[1] . "-" . $ymd[2];
         }
     }
     function get_start_date()
@@ -596,10 +604,10 @@ class Prescription extends ORDataObject
         $this->drug = $drug;
 
         if ($GLOBALS['weno_rx_enable']) {
-            $sql = "SELECT NDC FROM erx_drug_paid WHERE drug_label_name LIKE ? ";
-            $val = array('%'.$drug.'%');
+            $sql = "SELECT rxcui_drug_coded FROM erx_weno_drugs WHERE full_name LIKE ? ";
+            $val = array('%' . $drug . '%');
             $ndc = sqlQuery($sql, $val);
-            $drug_id = $ndc['NDC'];
+            $drug_id = $ndc['rxcui_drug_coded'];
             //Save this drug id
             $this->drug_id = $drug_id;
         }
@@ -608,10 +616,10 @@ class Prescription extends ORDataObject
     {
         if ($GLOBALS['weno_rx_enable']) {
             $drug = trim($this->drug);
-            $sql = "SELECT NDC FROM erx_drug_paid WHERE drug_label_name LIKE ? ";
-            $val = array('%'.$drug.'%');
+            $sql = "SELECT rxcui_drug_coded FROM erx_weno_drugs WHERE full_name  LIKE ? ";
+            $val = array('%' . $drug . '%');
             $ndc = sqlQuery($sql, $val);
-            $drug_id = $ndc['NDC'];
+            $drug_id = $ndc['rxcui_drug_coded'];
             //Save this drug id
             $this->drug_id = $drug_id;
         }
@@ -663,7 +671,6 @@ class Prescription extends ORDataObject
     {
         return $this->active;
     }
-
     function get_prescription_display()
     {
         $pconfig = $GLOBALS['oer_config']['prescriptions'];
@@ -687,21 +694,21 @@ class Prescription extends ORDataObject
         }
 
         $string .= ""
-                ."Prescription For:" . "\t" .$this->patient->get_name_display() . "\n"
-                ."DOB:"."\t".$this->patient->get_dob()."\n"
-                ."Start Date: " . "\t\t" . $this->start_date. "\n"
-                ."Provider: " . "\t\t" . $this->provider->get_name_display(). "\n"
-                ."Provider DEA No.: " . "\t\t" . $this->provider->federal_drug_id. "\n"
-                ."Drug: " . "\t\t\t" . $this->drug. "\n"
-                ."Dosage: " . "\t\t" . $this->dosage . " in ". $this->form_array[$this->form]. " form " . $this->interval_array[$this->interval]. "\n"
-                ."Qty: " . "\t\t\t" . $this->quantity. "\n"
-                ."Medication Unit: " . "\t" . $this->size  . " ". $this->unit_array[$this->unit] . "\n"
-                ."Substitute: " . "\t\t" . $this->substitute_array[$this->substitute]. "\n";
+                . "Prescription For:" . "\t" . $this->patient->get_name_display() . "\n"
+                . "DOB:" . "\t" . $this->patient->get_dob() . "\n"
+                . "Start Date: " . "\t\t" . $this->start_date . "\n"
+                . "Provider: " . "\t\t" . $this->provider->get_name_display() . "\n"
+                . "Provider DEA No.: " . "\t\t" . $this->provider->federal_drug_id . "\n"
+                . "Drug: " . "\t\t\t" . $this->drug . "\n"
+                . "Dosage: " . "\t\t" . $this->dosage . " in " . $this->form_array[$this->form] . " form " . $this->interval_array[$this->interval] . "\n"
+                . "Qty: " . "\t\t\t" . $this->quantity . "\n"
+                . "Medication Unit: " . "\t" . $this->size  . " " . $this->unit_array[$this->unit] . "\n"
+                . "Substitute: " . "\t\t" . $this->substitute_array[$this->substitute] . "\n";
         if ($this->refills > 0) {
-            $string .= "Refills: " . "\t\t" . $this->refills. ", of quantity: " . $this->per_refill ."\n";
+            $string .= "Refills: " . "\t\t" . $this->refills . ", of quantity: " . $this->per_refill . "\n";
         }
 
-        $string .= "\n"."Notes: \n" . $this->note . "\n";
+        $string .= "\n" . "Notes: \n" . $this->note . "\n";
         return $string;
     }
 
@@ -717,7 +724,7 @@ class Prescription extends ORDataObject
 
         $gnd = $this->provider->get_name_display();
 
-        while (strlen($gnd)<31) {
+        while (strlen($gnd) < 31) {
             $gnd .= " ";
         }
 
@@ -729,7 +736,7 @@ class Prescription extends ORDataObject
         if (!$results->EOF) {
             $rfn = $results->fields['name'];
 
-            while (strlen($rfn)<31) {
+            while (strlen($rfn) < 31) {
                 $rfn .= " ";
             }
 
@@ -745,7 +752,7 @@ class Prescription extends ORDataObject
         $string .= "\n";
         $string .= date("F j, Y", strtotime($this->start_date)) . "\n";
         $string .= "\n";
-        $string .= strtoupper($this->drug) . " " . $this->size  . " ". $this->unit_array[$this->unit] . "\n";
+        $string .= strtoupper($this->drug) . " " . $this->size  . " " . $this->unit_array[$this->unit] . "\n";
         if (strlen($this->note) > 0) {
             $string .= "Notes: \n" . $this->note . "\n";
         }
@@ -770,8 +777,8 @@ class Prescription extends ORDataObject
         }
 
         $string .= "\n";
-        $string .= "Refills: " . $this->refills . " (" . trim(strtoupper($ntt3->convert())) ."), Per Refill Disp: " . $this->per_refill . " (" . trim(strtoupper($ntt2->convert())) . ")" ."\n";
-        $string .= $this->substitute_array[$this->substitute]. "\n";
+        $string .= "Refills: " . $this->refills . " (" . trim(strtoupper($ntt3->convert())) . "), Per Refill Disp: " . $this->per_refill . " (" . trim(strtoupper($ntt2->convert())) . ")" . "\n";
+        $string .= $this->substitute_array[$this->substitute] . "\n";
         $string .= "\n";
 
         return $string;
@@ -801,7 +808,7 @@ class Prescription extends ORDataObject
         }
 
         $refills_row = sqlQuery("SELECT count(*) AS count FROM drug_sales " .
-                    "WHERE prescription_id = '" . $this->id . "' AND quantity > 0");
+                    "WHERE prescription_id = ? AND quantity > 0", [$this->id]);
         return $refills_row['count'];
     }
 }// end of Prescription

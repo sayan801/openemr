@@ -1,4 +1,5 @@
 <?php
+
 /**
  * spreadsheet.inc.php
  *
@@ -14,6 +15,8 @@
 require_once(dirname(__FILE__) . '/api.inc');
 require_once(dirname(__FILE__) . '/forms.inc');
 require_once(dirname(__FILE__) . '/../interface/forms/fee_sheet/codes.php');
+
+use OpenEMR\Core\Header;
 
 $celltypes = array(
  '0' => 'Unused',
@@ -41,7 +44,7 @@ function form2real($fldval)
 // encode a plain string for html display.
 function real2form($fldval)
 {
-    return htmlspecialchars($fldval, ENT_QUOTES);
+    return attr($fldval);
 }
 
 if (empty($spreadsheet_title)) {
@@ -79,7 +82,7 @@ if ($tempid) {
     $trow = sqlQuery("SELECT value FROM " . escape_table_name('form_' . $spreadsheet_form_name) .
     " WHERE id = ? AND rownbr = -1 AND colnbr = -1", array($tempid));
     $template_name = $trow['value'];
-} else if ($formid) {
+} elseif ($formid) {
     $trow = sqlQuery("SELECT value FROM " . escape_table_name('form_' . $spreadsheet_form_name) .
     " WHERE id = ? AND rownbr = -1 AND colnbr = -1", array($formid));
     list($form_completed, $start_date, $template_name) = explode('|', $trow['value'], 3);
@@ -131,8 +134,7 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
                 " WHERE id = ? AND rownbr >= 0 AND colnbr >= 0",
                 array($formid)
             );
-        } // If adding a new form...
-        else {
+        } else { // If adding a new form...
             $tmprow = sqlQuery(
                 "SELECT pid FROM form_encounter WHERE encounter = ? ORDER BY id DESC LIMIT 1",
                 array($thisenc)
@@ -149,8 +151,8 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
                 $formid = 1;
             }
 
-            sqlInsert(
-                "INSERT INTO " . escape_table_name('form_' .$spreadsheet_form_name) . " ( " .
+            sqlStatement(
+                "INSERT INTO " . escape_table_name('form_' . $spreadsheet_form_name) . " ( " .
                 "id, rownbr, colnbr, datatype, value " .
                 ") VALUES ( ?, -1, -1, 0, ? )",
                 array(
@@ -197,8 +199,7 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
                     " WHERE id = ? AND rownbr >= 0 AND colnbr >= 0",
                     array($tempid)
                 );
-            } // If adding a new template...
-            else {
+            } else { // If adding a new template...
                 sqlStatement(
                     "LOCK TABLES " . escape_table_name('form_' . $spreadsheet_form_name) .
                     " WRITE, log WRITE"
@@ -210,7 +211,7 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
                     $tempid = -1;
                 }
 
-                sqlInsert(
+                sqlStatement(
                     "INSERT INTO " . escape_table_name('form_' . $spreadsheet_form_name) . " ( " .
                     "id, rownbr, colnbr, datatype, value " .
                     ") VALUES ( ?, -1, -1, 0, ? )",
@@ -234,7 +235,7 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
                 $celltype = substr($tmp, 0, 1) + 0;
                 $cellvalue = form2db(substr($tmp, 1));
                 if ($celltype) {
-                    sqlInsert(
+                    sqlStatement(
                         "INSERT INTO " . escape_table_name('form_' . $spreadsheet_form_name) .
                         " ( id, rownbr, colnbr, datatype, value ) " .
                         "VALUES ( ?, ?, ?, ?, ? )",
@@ -244,7 +245,7 @@ if ($_POST['bn_save_form'] || $_POST['bn_save_template']) {
             }
         }
     }
-} else if ($_POST['bn_delete_template'] && $tempid) {
+} elseif ($_POST['bn_delete_template'] && $tempid) {
     sqlStatement(
         "DELETE FROM " . escape_table_name('form_' . $spreadsheet_form_name) .
         " WHERE id = ?",
@@ -281,8 +282,7 @@ if ($formid) {
     );
     $num_used_rows = $tmprow['rowmax'] + 1;
     $num_used_cols = $tmprow['colmax'] + 1;
-} # Otherwise if we are editing a template, get it.
-else if ($tempid) {
+} elseif ($tempid) { // Otherwise if we are editing a template, get it.
     $dres = sqlStatement(
         "SELECT * FROM " . escape_table_name('form_' . $spreadsheet_form_name) .
         " WHERE id = ? ORDER BY rownbr, colnbr",
@@ -305,9 +305,7 @@ $num_virtual_cols = $num_used_cols ? $num_used_cols + 5 : 10;
 ?>
 <html>
 <head>
-<?php html_header_show();?>
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+    <?php Header::setupHeader('datetime-picker'); ?>
 
 <style>
 .sstable td {
@@ -339,10 +337,6 @@ $num_virtual_cols = $num_used_cols ? $num_used_cols + 5 : 10;
  padding: 0 0 0 0;
 }
 </style>
-
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
-<script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
 
 <script language="JavaScript">
 
@@ -594,7 +588,7 @@ foreach ($bcodes['Phys']['Physiotherapy Procedures'] as $key => $value) {
   inelem.value = s.substring(0, i) + sel.value + s.substring(j);
  }
 
-    $(document).ready(function() {
+    $(function () {
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
@@ -609,7 +603,7 @@ foreach ($bcodes['Phys']['Physiotherapy Procedures'] as $key => $value) {
 </head>
 
 <body class="body_top">
-<form method="post" action="<?php echo "$rootdir/forms/$spreadsheet_form_name/new.php?id=$formid&thisenc=$thisenc";
+<form method="post" action="<?php echo "$rootdir/forms/$spreadsheet_form_name/new.php?id=" . attr_url($formid) . "&thisenc=" . attr_url($thisenc);
 if ($popup) {
     echo '&popup=1';
 } ?>"
@@ -619,38 +613,40 @@ if ($popup) {
 <table border='0' cellpadding='5' cellspacing='0' style='margin:8pt'>
  <tr bgcolor='#ddddff'>
   <td>
-    <?php xl('Start Date', 'e'); ?>:
+    <?php echo xlt('Start Date'); ?>:
    <input type='text' class='datepicker' name='form_start_date' id='form_start_date'
-    size='10' value='<?php echo $start_date; ?>'
+    size='10' value='<?php echo attr($start_date); ?>'
     title='yyyy-mm-dd'
     <?php echo ($formid && $start_date) ? 'disabled ' : ''; ?>/>
    &nbsp;
-    <?php xl('Template:', 'e') ?>
+    <?php echo xlt('Template:'); ?>
    <select name='form_template' onchange='newTemplate(this)'<?php echo ($formid) ? ' disabled' : ''; ?>>
     <option value='0'>-- Select --</option>
 <?php
 while ($trow = sqlFetchArray($tres)) {
-    echo "    <option value='" . $trow['id'] . "'";
-    if ($tempid && $tempid == $trow['id'] ||
-    $formid && $template_name == $trow['value']) {
+    echo "    <option value='" . attr($trow['id']) . "'";
+    if (
+        $tempid && $tempid == $trow['id'] ||
+        $formid && $template_name == $trow['value']
+    ) {
         echo " selected";
     }
 
-    echo ">" . $trow['value'] . "</option>\n";
+    echo ">" . text($trow['value']) . "</option>\n";
 }
 ?>
    </select>
    &nbsp;
    <input type='checkbox' name='form_edit_template'
     onclick='editChanged()'
-    title='<?php xl("If you want to change data types, or add rows or columns", "e") ?>' />
-    <?php xl('Edit Structure', 'e') ?>
+    title='<?php echo xla("If you want to change data types, or add rows or columns"); ?>' />
+    <?php echo xlt('Edit Structure'); ?>
 <?php if ($formid) { ?>
    &nbsp;
    <input type='checkbox' name='form_completed'
-    title='<?php xl("If all data for all columns are complete for this form", "e") ?>'
+    title='<?php echo xla("If all data for all columns are complete for this form"); ?>'
     <?php echo ($form_completed) ? 'checked ' : ''; ?>/>
-    <?php xl('Completed', 'e') ?>
+    <?php echo xlt('Completed'); ?>
 <?php } ?>
   </td>
  </tr>
@@ -681,7 +677,7 @@ for ($i = 0; $i < $num_virtual_rows; ++$i) {
 
             if ($drow && $drow['rownbr'] == $i && $drow['colnbr'] == $j) {
                 $celltype = $drow['datatype'];
-                $cellvalue = real2form($drow['value']);
+                $cellvalue = $drow['value'];
                 $cellstatic = addslashes($drow['value']);
             }
         }
@@ -704,12 +700,12 @@ for ($i = 0; $i < $num_virtual_rows; ++$i) {
         echo "<select id='sel_${i}_${j}' class='seltype' style='display:none' " .
         "onchange='newType($i,$j)'>";
         foreach ($celltypes as $key => $value) {
-            echo "<option value='$key'";
+            echo "<option value='" . attr($key) . "'";
             if ($key == $celltype) {
                 echo " selected";
             }
 
-            echo ">$value</option>";
+            echo ">" . text($value) . "</option>";
         }
 
         echo "</select>";
@@ -718,25 +714,25 @@ for ($i = 0; $i < $num_virtual_rows; ++$i) {
 
         echo "<span id='vis_${i}_${j}'>"; // new //
 
-        echo "<input type='hidden' name='cell[$i][$j]' value='$celltype$cellvalue' />";
+        echo "<input type='hidden' name='cell[$i][$j]' value='" . attr($celltype) . attr($cellvalue) . "' />";
         if ($celltype == '1') {
             // So we don't have to write a PHP version of genStatic():
             echo "<script language='JavaScript'>document.write(genStatic('$cellstatic'));</script>";
-        } else if ($celltype == '2') {
+        } elseif ($celltype == '2') {
             echo "<input type='checkbox' value='1' onclick='cbClick(this,$i,$j)'";
             if ($cellvalue) {
                 echo " checked";
             }
 
             echo " />";
-        } else if ($celltype == '3') {
+        } elseif ($celltype == '3') {
             echo "<input type='text' class='intext' onchange='textChange(this,$i,$j)'";
-            echo " value='$cellvalue'";
+            echo " value='" . attr($cellvalue) . "'";
             echo " size='12' />";
-        } else if ($celltype == '4') {
+        } elseif ($celltype == '4') {
             echo "<textarea rows='3' cols='25' wrap='virtual' class='intext' " .
             "onchange='longChange(this,$i,$j)'>";
-            echo $cellvalue;
+            echo text($cellvalue);
             echo "</textarea>";
         }
 
@@ -756,7 +752,7 @@ for ($i = 0; $i < $num_virtual_rows; ++$i) {
 &nbsp;
 <input type='submit' name='bn_save_template' value='Save as Template:' />
 &nbsp;
-<input type='text' name='form_new_template_name' value='<?php echo $template_name ?>' />
+<input type='text' name='form_new_template_name' value='<?php echo attr($template_name); ?>' />
 &nbsp;
 <input type='submit' name='bn_delete_template' value='Delete Template' />
 <?php } ?>
@@ -769,7 +765,7 @@ for ($i = 0; $i < $num_virtual_rows; ++$i) {
 <script language='JavaScript'>
 <?php
 if ($alertmsg) {
-    echo " alert('$alertmsg');\n";
+    echo " alert(" . js_escape($alertmsg) . ");\n";
 }
 ?>
 </script>

@@ -1,33 +1,23 @@
 <?php
-/* +-----------------------------------------------------------------------------+
-*    OpenEMR - Open Source Electronic Medical Record
-*    Copyright (C) 2014 Z&H Consultancy Services Private Limited <sam@zhservices.com>
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU Affero General Public License as
-*    published by the Free Software Foundation, either version 3 of the
-*    License, or (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU Affero General Public License for more details.
-*
-*    You should have received a copy of the GNU Affero General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
-*    @author  Vinish K <vinish@zhservices.com>
-*    @author  Riju K P <rijukp@zhservices.com>
-* +------------------------------------------------------------------------------+
-*/
+
+/**
+ * interface/modules/zend_modules/module/Carecoordination/src/Carecoordination/Model/EncountermanagerTable.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Vinish K <vinish@zhservices.com>
+ * @author    Riju K P <rijukp@zhservices.com>
+ * @copyright Copyright (c) 2014 Z&H Consultancy Services Private Limited <sam@zhservices.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 namespace Carecoordination\Model;
 
-use Zend\Db\TableGateway\AbstractTableGateway;
+use OpenEMR\Common\Crypto\CryptoGen;
+use Laminas\Db\TableGateway\AbstractTableGateway;
 use Application\Model\ApplicationTable;
-use Zend\Db\Adapter\Driver\Pdo\Result;
+use Laminas\Db\Adapter\Driver\Pdo\Result;
 use ZipArchive;
-
 use CouchDB;
 use DOMPDF;
 
@@ -67,10 +57,10 @@ class EncountermanagerTable extends AbstractTableGateway
         if ($data['pid']) {
             $query .= " AND (fe.pid = ? OR pd.fname like ? OR pd.mname like ? OR pd.lname like ? OR CONCAT_WS(' ',pd.fname,pd.lname) like ?) ";
             $query_data[] = $data['pid'];
-            $query_data[] = "%".$data['pid']."%";
-            $query_data[] = "%".$data['pid']."%";
-            $query_data[] = "%".$data['pid']."%";
-            $query_data[] = "%".$data['pid']."%";
+            $query_data[] = "%" . $data['pid'] . "%";
+            $query_data[] = "%" . $data['pid'] . "%";
+            $query_data[] = "%" . $data['pid'] . "%";
+            $query_data[] = "%" . $data['pid'] . "%";
         }
 
         if ($data['encounter']) {
@@ -122,17 +112,17 @@ class EncountermanagerTable extends AbstractTableGateway
     {
         $date = str_replace('/', '-', $date);
         $arr = explode('-', $date);
-        $formatted_date = $arr[2]."-".$arr[0]."-".$arr[1];
+        $formatted_date = $arr[2] . "-" . $arr[0] . "-" . $arr[1];
         return $formatted_date;
     }
 
     /*
     * Convert date from database format to required format
     *
-    * @param	String		$date		Date from database (format: YYYY-MM-DD)
-    * @param	String		$format		Required date format
+    * @param    String      $date       Date from database (format: YYYY-MM-DD)
+    * @param    String      $format     Required date format
     *
-    * @return	String		$formatted_date	New formatted date
+    * @return   String      $formatted_date New formatted date
     */
     public function date_format($date, $format)
     {
@@ -147,10 +137,10 @@ class EncountermanagerTable extends AbstractTableGateway
         $arr = explode('-', $date);
 
         if ($format == 'm/d/y') {
-            $formatted_date = $arr[1]."/".$arr[2]."/".$arr[0];
+            $formatted_date = $arr[1] . "/" . $arr[2] . "/" . $arr[0];
         }
 
-        $formatted_date = $temp[1] ? $formatted_date." ".$temp[1] : $formatted_date; //append the time, if exists, with the new formatted date
+        $formatted_date = $temp[1] ? $formatted_date . " " . $temp[1] : $formatted_date; //append the time, if exists, with the new formatted date
         return $formatted_date;
     }
 
@@ -165,7 +155,7 @@ class EncountermanagerTable extends AbstractTableGateway
                 $data    = array($GLOBALS['couchdb_dbase'], $row['couch_docid']);
                 $resp    = $couch->retrieve_doc($data);
                 $content = base64_decode($resp->data);
-            } else if (!$row['couch_docid']) {
+            } elseif (!$row['couch_docid']) {
                 $fccda   = fopen($row['ccda_data'], "r");
                 $content = fread($fccda, filesize($row['ccda_data']));
                 fclose($fccda);
@@ -195,31 +185,32 @@ class EncountermanagerTable extends AbstractTableGateway
         $rec_arr          = explode(";", $recipients);
         $d_Address        = '';
         foreach ($rec_arr as $recipient) {
-            $config_err = "Direct messaging is currently unavailable."." EC:";
-            if ($GLOBALS['phimail_enable']==false) {
+            $config_err = "Direct messaging is currently unavailable." . " EC:";
+            if ($GLOBALS['phimail_enable'] == false) {
                 return("$config_err 1");
             }
 
             $fp = \Application\Plugin\Phimail::phimail_connect($err);
-            if ($fp===false) {
+            if ($fp === false) {
                 return("$config_err $err");
             }
 
             $phimail_username = $GLOBALS['phimail_username'];
-            $phimail_password = decryptStandard($GLOBALS['phimail_password']);
+            $cryptoGen = new CryptoGen();
+            $phimail_password = $cryptoGen->decryptStandard($GLOBALS['phimail_password']);
             $ret = \Application\Plugin\Phimail::phimail_write_expect_OK($fp, "AUTH $phimail_username $phimail_password\n");
-            if ($ret!==true) {
+            if ($ret !== true) {
                 return("$config_err 4");
             }
 
             $ret = \Application\Plugin\Phimail::phimail_write_expect_OK($fp, "TO $recipient\n");
-            if ($ret!==true) {//return("Delivery is not allowed to the specified Direct Address.") ;
-                $d_Address.= ' '.$recipient;
+            if ($ret !== true) {//return("Delivery is not allowed to the specified Direct Address.") ;
+                $d_Address .= ' ' . $recipient;
                 continue;
             }
 
-            $ret=fgets($fp, 1024); //ignore extra server data
-            if ($requested_by=="patient") {
+            $ret = fgets($fp, 1024); //ignore extra server data
+            if ($requested_by == "patient") {
                 $text_out = "Delivery of the attached clinical document was requested by the patient";
             } else {
                 if (strpos($ccda_combination, '|') !== false) {
@@ -229,20 +220,20 @@ class EncountermanagerTable extends AbstractTableGateway
                 }
             }
 
-            $text_len=strlen($text_out);
+            $text_len = strlen($text_out);
             \Application\Plugin\Phimail::phimail_write($fp, "TEXT $text_len\n");
-            $ret=@fgets($fp, 256);
-            if ($ret!="BEGIN\n") {
+            $ret = @fgets($fp, 256);
+            if ($ret != "BEGIN\n") {
                 \Application\Plugin\Phimail::phimail_close($fp);
               //return("$config_err 5");
-                $d_Address.= ' '.$recipient;
+                $d_Address .= ' ' . $recipient;
                 continue;
             }
 
-            $ret=\Application\Plugin\Phimail::phimail_write_expect_OK($fp, $text_out);
-            if ($ret!==true) {
+            $ret = \Application\Plugin\Phimail::phimail_write_expect_OK($fp, $text_out);
+            if ($ret !== true) {
               //return("$config_err 6");
-                $d_Address.= $recipient;
+                $d_Address .= $recipient;
                 continue;
             }
 
@@ -271,11 +262,11 @@ class EncountermanagerTable extends AbstractTableGateway
                 $ccda = $this->getFile($ccda_id);
 
                 $xml = simplexml_load_string($ccda);
-                $xsl = new \DOMDocument;
-                $xsl->load(dirname(__FILE__).'/../../../../../public/xsl/ccda.xsl');
-                $proc = new \XSLTProcessor;
+                $xsl = new \DOMDocument();
+                $xsl->load(dirname(__FILE__) . '/../../../../../public/xsl/ccda.xsl');
+                $proc = new \XSLTProcessor();
                 $proc->importStyleSheet($xsl); // attach the xsl rules
-                $outputFile = sys_get_temp_dir() . '/out_'.time().'.html';
+                $outputFile = sys_get_temp_dir() . '/out_' . time() . '.html';
                 $proc->transformToURI($xml, $outputFile);
                 $htmlContent = file_get_contents($outputFile);
                 if ($xml_type == 'html') {
@@ -311,33 +302,33 @@ class EncountermanagerTable extends AbstractTableGateway
                     $ccda     = simplexml_load_string($ccda_file);
                     $ccda_out = $ccda->saveXml();
                     $ccda_len = strlen($ccda_out);
-                    \Application\Plugin\Phimail::phimail_write($fp, "ADD " . ($xml_type=="CCR" ? $xml_type . ' ' : "CDA ") . $ccda_len . $att_filename . "\n");
-                } else if (strtolower($xml_type) == 'html' || strtolower($xml_type) == 'pdf') {
+                    \Application\Plugin\Phimail::phimail_write($fp, "ADD " . ($xml_type == "CCR" ? $xml_type . ' ' : "CDA ") . $ccda_len . $att_filename . "\n");
+                } elseif (strtolower($xml_type) == 'html' || strtolower($xml_type) == 'pdf') {
                     $ccda_out = $ccda_file;
                     $message_length = strlen($ccda_out);
                     $add_type = (strtolower($xml_type) == 'html') ? 'TEXT' : 'RAW';
                     \Application\Plugin\Phimail::phimail_write($fp, "ADD " . $add_type . " " . $message_length . "" . $att_filename . "\n");
                 }
 
-                $ret=fgets($fp, 256);
-                if ($ret!="BEGIN\n") {
+                $ret = fgets($fp, 256);
+                if ($ret != "BEGIN\n") {
                     \Application\Plugin\Phimail::phimail_close($fp);
                     //return("$config_err 7");
-                    $d_Address.= ' '.$recipient;
+                    $d_Address .= ' ' . $recipient;
                     continue;
                 }
 
-                $ret=\Application\Plugin\Phimail::phimail_write_expect_OK($fp, $ccda_out);
+                $ret = \Application\Plugin\Phimail::phimail_write_expect_OK($fp, $ccda_out);
             }
 
-            if ($ret!==true) {
+            if ($ret !== true) {
 //              return("$config_err 8");
-                $d_Address.= ' '.$recipient;
+                $d_Address .= ' ' . $recipient;
                 continue;
             }
 
             \Application\Plugin\Phimail::phimail_write($fp, "SEND\n");
-            $ret=fgets($fp, 256);
+            $ret = fgets($fp, 256);
         //"INSERT INTO `amc_misc_data` (`amc_id`,`pid`,`map_category`,`map_id`,`date_created`) VALUES(?,?,?,?,NOW())"
             \Application\Plugin\Phimail::phimail_close($fp);
         }
@@ -350,7 +341,7 @@ class EncountermanagerTable extends AbstractTableGateway
 
             return("Successfully Sent");
         } else {
-            return("Delivery is not allowed to:".$d_Address);
+            return("Delivery is not allowed to:" . $d_Address);
         }
     }
     public function getFileID($pid)
@@ -368,9 +359,9 @@ class EncountermanagerTable extends AbstractTableGateway
     /*
     * Save new user with abook type emr_direct
     *
-    * @param	String		first name
-    * @param	String		last name
-    * @param	String		direct address
+    * @param    String      first name
+    * @param    String      last name
+    * @param    String      direct address
     *
     */
     public function AddNewUSer($data = array())

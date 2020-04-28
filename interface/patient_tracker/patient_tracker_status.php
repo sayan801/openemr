@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Patient Tracker Status Editor
  *
@@ -14,18 +15,18 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../globals.php");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/forms.inc");
 require_once("$srcdir/encounter_events.inc.php");
 require_once("$srcdir/patient_tracker.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 if (!empty($_GET)) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 }
 
@@ -52,9 +53,9 @@ $theroom = '';
     </head>
 
 <?php
-if ($_POST['statustype'] !='') {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+if ($_POST['statustype'] != '') {
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $status = $_POST['statustype'];
@@ -99,12 +100,12 @@ $row = sqlQuery("select fname, lname " .
 <body class="body_top">
     <div class="container">
         <div class="row">
-            <div class="col-xs-12">
-                <h2><?php echo xlt('Change Status for'). " " . text($row['fname']) . " " . text($row['lname']); ?></h2>
+            <div class="col-12">
+                <h2><?php echo xlt('Change Status for') . " " . text($row['fname']) . " " . text($row['lname']); ?></h2>
             </div>
         </div>
-        <form id="form_note" method="post" action="patient_tracker_status.php?tracker_id=<?php echo attr_url($tracker_id) ?>&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>" enctype="multipart/form-data" >
-            <input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+        <form id="form_note" method="post" action="patient_tracker_status.php?tracker_id=<?php echo attr_url($tracker_id) ?>&csrf_token_form=<?php echo attr_url(CsrfUtils::collectCsrfToken()); ?>" enctype="multipart/form-data" >
+            <input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
             <div class="form-group">
                 <label for="statustype"><?php echo xlt('Status Type'); ?></label>
                 <?php echo generate_select_list('statustype', 'apptstat', $trow['laststatus'], xl('Status Type')); ?>
@@ -115,7 +116,7 @@ $row = sqlQuery("select fname, lname " .
             </div>
             <div class="position-override">
                 <div class="btn-group oe-opt-btn-group-pinch" role="group">
-                    <a href='javascript:;' class='btn btn-default btn-save' onclick='document.getElementById("form_note").submit();'><?php echo xlt('Save')?></a>
+                    <a href='javascript:;' class='btn btn-secondary btn-save' onclick='document.getElementById("form_note").submit();'><?php echo xlt('Save')?></a>
                     <a href='javascript:;' class='btn btn-link btn-cancel oe-opt-btn-separate-left' onclick="dlgclose();" ><?php echo xlt('Cancel'); ?></a>
                 </div>
             </div>

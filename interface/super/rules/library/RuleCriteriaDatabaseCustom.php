@@ -1,10 +1,16 @@
 <?php
- // Copyright (C) 2010-2011 Aron Racho <aron@mi-squred.com>
- //
- // This program is free software; you can redistribute it and/or
- // modify it under the terms of the GNU General Public License
- // as published by the Free Software Foundation; either version 2
- // of the License, or (at your option) any later version.
+
+/**
+ * interface/super/rules/library/RuleCriteriaDatabaseCustom.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Aron Racho <aron@mi-squared.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2010-2011 Aron Racho <aron@mi-squared.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 /**
  * Description of RuleCriteriaDatabaseCustom
@@ -45,7 +51,7 @@ class RuleCriteriaDatabaseCustom extends RuleCriteria
             $requirements .= $this->decodeComparator($this->valueComparator) . " " . $this->value;
             $requirements .= " | ";
         }
-        
+
         $requirements .= xl("Frequency") . ": ";
         $requirements .= $this->decodeComparator($this->frequencyComparator) . " " . $this->frequency;
 
@@ -66,15 +72,15 @@ class RuleCriteriaDatabaseCustom extends RuleCriteria
     {
         $options = array();
         $stmts = sqlStatement("SHOW TABLES");
-        for ($iter=0; $row=sqlFetchArray($stmts); $iter++) {
+        for ($iter = 0; $row = sqlFetchArray($stmts); $iter++) {
             foreach ($row as $key => $value) {
-                array_push($options, array( "id" => out($value), "label" => out(xl($value)) ));
+                array_push($options, array( "id" => $value, "label" => xl($value)));
             }
         }
 
         return $options;
     }
-    
+
     function getDbView()
     {
         $dbView = parent::getDbView();
@@ -83,7 +89,7 @@ class RuleCriteriaDatabaseCustom extends RuleCriteria
         $dbView->methodDetail = "";
         $dbView->value =
                 "::"
-                . $this->table . "::" . $this->column. "::"
+                . $this->table . "::" . $this->column . "::"
                 . $this->valueComparator . "::" . $this->value . "::"
                 . $this->frequencyComparator . "::" . $this->frequency;
         return $dbView;

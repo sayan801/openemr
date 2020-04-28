@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Care plan form save.php
  *
@@ -12,13 +13,14 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
-require_once("../../globals.php");
+require_once(__DIR__ . "/../../globals.php");
 require_once("$srcdir/api.inc");
 require_once("$srcdir/forms.inc");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 if (!$encounter) { // comes from globals.php
@@ -52,7 +54,7 @@ $count = array_filter($count);
 if (!empty($count)) {
     foreach ($count as $key => $codeval) :
         $code_val = $code[$key] ? $code[$key] : 0;
-        $codetext_val = $code_text[$key] ? $code_text[$key] :'NULL';
+        $codetext_val = $code_text[$key] ? $code_text[$key] : 'NULL';
         $description_val = $code_des[$key] ? $code_des[$key] : 'NULL';
         $care_plan_type_val = $care_plan_type[$key] ? $care_plan_type[$key] : 'NULL';
         $sets = "id = ?,
@@ -67,7 +69,7 @@ if (!empty($count)) {
             description = ?,
             date =  ?,
             care_plan_type = ?";
-        sqlInsert(
+        sqlStatement(
             "INSERT INTO form_care_plan SET " . $sets,
             [
                 $newid,

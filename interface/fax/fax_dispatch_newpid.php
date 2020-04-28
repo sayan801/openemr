@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2008, 2010 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -14,8 +15,10 @@
 
 require_once("../globals.php");
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $res = sqlStatement("SELECT date, encounter, reason FROM form_encounter " .

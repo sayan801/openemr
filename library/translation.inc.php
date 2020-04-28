@@ -12,7 +12,7 @@
 if (!(function_exists('xl'))) {
     function xl($constant, $mode = 'r', $prepend = '', $append = '')
     {
-        if ($GLOBALS['temp_skip_translations']) {
+        if (!empty($GLOBALS['temp_skip_translations'])) {
             return $constant;
         }
 
@@ -23,44 +23,36 @@ if (!(function_exists('xl'))) {
              $lang_id = 1;
         }
 
-        if ($lang_id == 1 && !empty($GLOBALS['skip_english_translation'])) {
-             // language id = 1, so no need to translate
-             //  -- remove comments
-             $string = preg_replace('/\{\{.*\}\}/', '', $constant);
+        // TRANSLATE
+        // first, clean lines
+        // convert new lines to spaces and remove windows end of lines
+        $patterns = array ('/\n/','/\r/');
+        $replace = array (' ','');
+        $constant = preg_replace($patterns, $replace, $constant);
+        // second, attempt translation
+        $sql = "SELECT * FROM lang_definitions JOIN lang_constants ON " .
+        "lang_definitions.cons_id = lang_constants.cons_id WHERE " .
+        "lang_id=? AND constant_name = ? LIMIT 1";
+        $res = sqlStatementNoLog($sql, array($lang_id,$constant));
+        $row = SqlFetchArray($res);
+        $string = $row['definition'];
+        if ($string == '') {
+            $string = "$constant";
+        }
+        // remove dangerous characters and remove comments
+        if ($GLOBALS['translate_no_safe_apostrophe']) {
+            $patterns = array ('/\n/','/\r/','/\{\{.*\}\}/');
+            $replace = array (' ','','');
+            $string = preg_replace($patterns, $replace, $string);
         } else {
-             // TRANSLATE
-             // first, clean lines
-             // convert new lines to spaces and remove windows end of lines
-             $patterns = array ('/\n/','/\r/');
-             $replace = array (' ','');
-             $constant = preg_replace($patterns, $replace, $constant);
-
-             // second, attempt translation
-             $sql="SELECT * FROM lang_definitions JOIN lang_constants ON " .
-            "lang_definitions.cons_id = lang_constants.cons_id WHERE " .
-            "lang_id=? AND constant_name = ? LIMIT 1";
-             $res = sqlStatementNoLog($sql, array($lang_id,$constant));
-             $row = SqlFetchArray($res);
-             $string = $row['definition'];
-            if ($string == '') {
-                $string = "$constant";
-            }
-
-             // remove dangerous characters and remove comments
-            if ($GLOBALS['translate_no_safe_apostrophe']) {
-                $patterns = array ('/\n/','/\r/','/\{\{.*\}\}/');
-                $replace = array (' ','','');
-                $string = preg_replace($patterns, $replace, $string);
-            } else {
-                // convert apostrophes and quotes to safe apostrophe
-                $patterns = array ('/\n/','/\r/','/"/',"/'/",'/\{\{.*\}\}/');
-                $replace = array (' ','','`','`','');
-                $string = preg_replace($patterns, $replace, $string);
-            }
+            // convert apostrophes and quotes to safe apostrophe
+            $patterns = array ('/\n/','/\r/','/"/',"/'/",'/\{\{.*\}\}/');
+            $replace = array (' ','','`','`','');
+            $string = preg_replace($patterns, $replace, $string);
         }
 
         $string = "$prepend" . "$string" . "$append";
-        if ($mode=='e') {
+        if ($mode == 'e') {
              echo $string;
         } else {
              return $string;
@@ -95,9 +87,9 @@ function xl_list_label($constant, $mode = 'r', $prepend = '', $append = '')
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -115,9 +107,9 @@ function xl_layout_label($constant, $mode = 'r', $prepend = '', $append = '')
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -136,9 +128,9 @@ function xl_gacl_group($constant, $mode = 'r', $prepend = '', $append = '')
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -157,9 +149,9 @@ function xl_form_title($constant, $mode = 'r', $prepend = '', $append = '')
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -179,9 +171,9 @@ function xl_document_category($constant, $mode = 'r', $prepend = '', $append = '
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -201,9 +193,9 @@ function xl_appt_category($constant, $mode = 'r', $prepend = '', $append = '')
     } else {
         // DO NOT TRANSLATE
         if ($mode == "e") {
-            echo $prepend.$constant.$append;
+            echo $prepend . $constant . $append;
         } else {
-            return $prepend.$constant.$append;
+            return $prepend . $constant . $append;
         }
     }
 }
@@ -230,7 +222,7 @@ function getLanguageTitle($val)
     for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
         $result[$iter] = $row;
     };
-    $languageTitle = $result[0]{"lang_description"};
+    $languageTitle = $result[0]["lang_description"];
     return $languageTitle;
 }
 
@@ -251,26 +243,4 @@ function getLanguageDir($lang_id)
     $row = sqlQuery('SELECT * FROM lang_languages WHERE lang_id = ?', array($lang_id));
 
     return !empty($row['lang_is_rtl']) ? 'rtl' : 'ltr';
-}
-
-//----------------------------------
-
-// ----------------------------------------------------------------------------
-/**
-HEADER HTML
-
-shows some informations for pages html header
-
-@param none
-@return void
-*/
-function html_header_show()
-{
-
-    // Below line was commented by the UTF-8 project on 05-2009 by BM.
-    //  We commented this out since we are now standardizing encoding
-    //  in the globals.php file.
-    // echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> '."\n";
-    //
-    // Keeping this function, since it may prove useful for user interface improvements
 }

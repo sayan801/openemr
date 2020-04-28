@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This include is just a HTML and JS *fragment* it CANNOT stand alone
  *
@@ -18,6 +19,9 @@
  * @copyright Copyright (c) 2018 Brady Miller <brady.g.miller@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+
 ?>
 
 
@@ -60,16 +64,16 @@
 
 // jQuery makes life easier (sometimes)
 
-$(document).ready(function(){
+$(function () {
 
     /********************************************************/
     /************ List-box modification functions ***********/
     /********************************************************/
 
-    $("#newlistitem").keypress(function(evt) { if (evt.keyCode == 13) { SaveNewListItem(this, evt); return false; }});
-    $(".addtolist").click(function(evt) { AddToList(this, evt); });
-    $("#newlistitem_submit").click(function(evt) { SaveNewListItem(this, evt); });
-    $("#newlistitem_cancel").click(function(evt) { CancelAddToList(this, evt); });
+    $("#newlistitem").on("keypress", function(evt) { if (evt.keyCode == 13) { SaveNewListItem(this, evt); return false; }});
+    $(".addtolist").on("click", function(evt) { AddToList(this, evt); });
+    $("#newlistitem_submit").on("click", function(evt) { SaveNewListItem(this, evt); });
+    $("#newlistitem_cancel").on("click", function(evt) { CancelAddToList(this, evt); });
 
     // display the 'new list item' DIV at the mouse position
     var AddToList = function(btnObj, e) {
@@ -164,7 +168,7 @@ $(document).ready(function(){
         // upon returning successfully, refresh the list box and select
         // the new list item
         $.getJSON("<?php echo $GLOBALS['webroot']; ?>/library/ajax/addlistitem.php",
-                    {csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>,
+                    {csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>,
                     listid: listid,
              newitem: newitem,
              newitem_abbr: newitem_abbr},

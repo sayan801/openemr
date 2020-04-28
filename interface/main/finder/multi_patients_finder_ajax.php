@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Ajax interface for popup of multi select patient.
  *
@@ -14,8 +15,10 @@
 require_once('../../globals.php');
 require_once("$srcdir/patient.inc");
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $type = $_GET['type'];
@@ -24,7 +27,7 @@ $search = $_GET['search'];
 switch ($type) {
     case 'by-id':
         // load patients ids for select2.js library, expect receive 'text' and 'id'.
-        $results=getPatientId("$search%", 'pubpid as text, pid as id', 'pubpid');
+        $results = getPatientId("$search%", 'pubpid as text, pid as id', 'pubpid');
         foreach ($results as $key => $result) {
             //clean data using 'text' function
             $results[$key] = array_map('text', $result);
@@ -32,16 +35,16 @@ switch ($type) {
         break;
     case 'by-name':
         // load patients names for select2.js library, expect receive 'text' and 'id'.
-        $results=getPatientLnames("%$search%", 'pid as id, CONCAT(lname, ", ",fname)  as text', 'lname ASC, fname ASC');
+        $results = getPatientLnames("%$search%", 'pid as id, CONCAT(lname, ", ",fname)  as text', 'lname ASC, fname ASC');
         foreach ($results as $key => $result) {
             //clean data using 'text' function
             $results[$key] = array_map('text', $result);
         }
         break;
     case 'patient-by-id':
-        $results=getPatientData($search, 'id, pid, lname, fname, mname, pubpid, ss, DOB, phone_home');
+        $results = getPatientData($search, 'id, pid, lname, fname, mname, pubpid, ss, DOB, phone_home');
         //clean data using 'text' function
-        $results=array_map('text', $results);
+        $results = array_map('text', $results);
         $results['DOB'] = oeFormatShortDate($results['DOB']);
         break;
 }

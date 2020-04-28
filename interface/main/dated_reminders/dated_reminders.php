@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Used for displaying dated reminders.
  *
@@ -11,10 +12,11 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 // removed as jquery is already called in messages page (if you need to use jQuery, uncomment it futher down)
 require_once('../../globals.php');
 require_once("$srcdir/dated_reminder_functions.php");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
 
         $days_to_show = 30;
         $alerts_to_show = $GLOBALS['dated_reminders_max_alerts_to_show'];
@@ -35,8 +37,8 @@ require_once("$srcdir/dated_reminder_functions.php");
 // Javascript will send a post
 // ----------------------------------------------------------------------------
 if (isset($_POST['drR'])) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     // set as processed
@@ -55,35 +57,35 @@ if (isset($_POST['drR'])) {
 
       $reminders = RemindersArray($days_to_show, $today, $alerts_to_show);
 
-        ?>
+?>
 
-      <style type="text/css">
-         div.dr{
-           margin:0;
-           font-size:0.6em;
+      <style>
+         div.dr {
+           margin: 0;
+           font-size: 0.6rem;
          }
-         .dr_container a{
-           font-size:0.8em;
+         .dr_container a {
+           font-size: 0.8rem;
          }
-         .dr_container{
+         .dr_container {
            padding:5px 5px 8px 5px;
          }
-         .dr_container p{
-           margin:6px 0 0 0;
+         .dr_container p {
+           margin: 6px 0 0 0;
          }
-         .patLink{
+         .patLink {
            font-weight: bolder;
-           cursor:pointer;
+           cursor: pointer;
            text-decoration: none;
          }
          .patLink:hover{
            font-weight: bolder;
-           cursor:pointer;
+           cursor: pointer;
            text-decoration: underline;
          }
       </style>
-      <script type="text/javascript">
-         $(document).ready(function (){
+      <script>
+         $(function () {
             $(".hideDR").click(function(){
               if($(this).html() == "<span><?php echo xla('Hide Reminders') ?></span>"){
                 $(this).html("<span><?php echo xla('Show Reminders') ?></span>");
@@ -93,10 +95,10 @@ if (isset($_POST['drR'])) {
                 $(this).html("<span><?php echo xla('Hide Reminders') ?></span>");
                 $(".drHide").slideDown("slow");
               }
-            })
+            });
            // run updater after 30 seconds
            var updater = setTimeout("updateme(0)", 1);
-         })
+         });
 
            function openAddScreen(id){
              if(id == 0){
@@ -104,17 +106,17 @@ if (isset($_POST['drR'])) {
                dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php', '_drAdd', 700, 500);
              }else{
                top.restoreSession();
-               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php?mID='+encodeURIComponent(id)+'&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>', '_drAdd', 700, 500);
+               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_add.php?mID='+encodeURIComponent(id)+'&csrf_token_form=<?php echo attr_url(CsrfUtils::collectCsrfToken()); ?>', '_drAdd', 700, 500);
              }
            }
 
            function updateme(id){
              refreshInterval = <?php echo attr($updateDelay); ?>;
              if(id > 0){
-              $(".drTD").html('<p style="text-size:3em; margin-left:200px; color:black; font-weight:bold;"><?php echo xla("Processing") ?>...</p>');
+              $(".drTD").html('<p class="text-body font-weight-bold" style="font-size: 3rem; margin-left: 200px;"><?php echo xla("Processing") ?>...</p>');
              }
              if(id == 'new'){
-              $(".drTD").html('<p style="text-size:3em; margin-left:200px; color:black; font-weight:bold;"><?php echo xla("Processing") ?>...</p>');
+              $(".drTD").html('<p class="text-body font-weight-bold" style="font-size: 3rem; margin-left: 200px;"><?php echo xla("Processing") ?>...</p>');
              }
              top.restoreSession();
              // Send the skip_timeout_reset parameter to not count this as a manual entry in the
@@ -123,14 +125,14 @@ if (isset($_POST['drR'])) {
                {
                 drR: id,
                 skip_timeout_reset: "1",
-                csrf_token_form: "<?php echo attr(collectCsrfToken()); ?>"
+                csrf_token_form: "<?php echo attr(CsrfUtils::collectCsrfToken()); ?>"
                },
                function(data) {
                 if(data == 'error'){
                   alert("<?php echo xls('Error Removing Message') ?>");
                 }else{
                   if(id > 0){
-                    $(".drTD").html('<p style="text-size:3em; margin-left:200px; color:black; font-weight:bold;"><?php echo xla("Refreshing Reminders") ?> ...</p>');
+                    $(".drTD").html('<p class="text-body font-weight-bold" style="font-size: 3rem; margin-left: 200px;"><?php echo xla("Refreshing Reminders") ?> ...</p>');
                   }
                   $(".drTD").html(data);
                 }
@@ -141,7 +143,7 @@ if (isset($_POST['drR'])) {
 
             function openLogScreen(){
                top.restoreSession();
-               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_log.php', '_drLog', 700, 500);
+               dlgopen('<?php echo $GLOBALS['webroot']; ?>/interface/main/dated_reminders/dated_reminders_log.php', '_drLog', 'modal-mlg', 850);
             }
 
 
@@ -157,14 +159,13 @@ if (isset($_POST['drR'])) {
         <?php
           // initialize html string
           $pdHTML = '<div class="container">
-                            <div class="drHide col-xs-12">'.
-                                '<a title="'.xla('View Past and Future Reminders').'" onclick="openLogScreen()" class="btn btn-default btn-show" href="#"><span>'.xlt('View Log').'</span></a>&nbsp;'
-                                .'<a onclick="openAddScreen(0)" class="btn btn-default btn-add" href="#"><span>'.xlt('Create A Dated Reminder').'</span></a>
+                            <div class="drHide col-12">' .
+                                '<a title="' . xla('View Past and Future Reminders') . '" onclick="openLogScreen()" class="btn btn-secondary btn-show" href="#">' . xlt('View Log') . '</a>&nbsp;' . '<a onclick="openAddScreen(0)" class="btn btn-secondary btn-add" href="#">' . xlt('Create A Dated Reminder') . '</a>
                             </div>
-                            <div class="col-xs-12 pre-scrollable oe-margin-t-10">
+                            <div class="col-12 pre-scrollable oe-margin-t-10">
                             <fieldset>
-                            <legend>'.xla('Dated Reminders').'</legend>
-                           <table class="table-condensed">
+                            <legend>' . xla('Dated Reminders') . '</legend>
+                           <table class="table-sm">
                             </tr>
                                 <td class="drHide drTD">';
 

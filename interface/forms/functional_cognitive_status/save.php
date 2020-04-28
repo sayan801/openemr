@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Functional cognitive status form save.php.
  *
@@ -12,13 +13,14 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
-require_once("../../globals.php");
+require_once(__DIR__ . "/../../globals.php");
 require_once("$srcdir/api.inc");
 require_once("$srcdir/forms.inc");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 if (!$encounter) { // comes from globals.php
@@ -57,12 +59,12 @@ if (!empty($code_text)) {
             user = ?,
             encounter = ?,
             authorized = ?, 
-            activity = '?,
+            activity = ?,
             code = ?,
             codetext = ?,
             description= ?,
             date = ?";
-        sqlInsert(
+        sqlStatement(
             "INSERT INTO form_functional_cognitive_status SET $sets",
             [
                 $newid,

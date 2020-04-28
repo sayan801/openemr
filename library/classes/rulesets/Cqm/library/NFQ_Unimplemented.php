@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2011 Ken Chapple <ken@mi-squared.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -8,7 +9,7 @@
 //
 require_once('AbstractCqmReport.php');
 
-class NFQ_Unimplemented extends AbstractCqmReport implements RsUnimplementedIF
+class NQF_Unimplemented extends AbstractCqmReport implements RsUnimplementedIF
 {
     public function __construct()
     {

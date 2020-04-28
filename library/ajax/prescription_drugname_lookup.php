@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file use is used specifically to look up drug names when
  * writing a prescription. See the file:
@@ -18,8 +19,10 @@
 
 require_once("../../interface/globals.php");
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 if (isset($_GET['term'])) {
@@ -27,10 +30,10 @@ if (isset($_GET['term'])) {
     $term = filter_input(INPUT_GET, "term");
 
     $sql = "SELECT `drug_id`, `name` FROM `drugs` WHERE `name` LIKE ? ORDER BY `name`";
-    $val = array($term.'%');
+    $val = array($term . '%');
     $res = sqlStatement($sql, $val);
     while ($row = sqlFetchArray($res)) {
-        $return_arr[] =  $row['name'] . " - ". $row['drug_id'];
+        $return_arr[] =  $row['name'] . " - " . $row['drug_id'];
     }
 
     /* Toss back results as json encoded array. */

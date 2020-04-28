@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This script creates an export file and sends it to the users's
  * browser for download.
@@ -12,14 +13,15 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../globals.php");
-require_once("$srcdir/acl.inc");
 require_once("$srcdir/patient.inc");
 
+use OpenEMR\Common\Acl\AclMain;
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
 use OpenEMR\Services\FacilityService;
 
-if (!acl_check('admin', 'super')) {
+if (!AclMain::aclCheckCore('admin', 'super')) {
     die("Not authorized!");
 }
 
@@ -43,8 +45,7 @@ function Add($tag, $text)
             $text = '';
         }
 
-        for ($i = 0; $i < $indent;
-        ++$i) {
+        for ($i = 0; $i < $indent; ++$i) {
             $out .= "\t";
         }
 
@@ -62,8 +63,7 @@ function AddIfPresent($tag, $text)
 function OpenTag($tag)
 {
     global $out, $indent;
-    for ($i = 0; $i < $indent;
-    ++$i) {
+    for ($i = 0; $i < $indent; ++$i) {
         $out .= "\t";
     }
 
@@ -75,8 +75,7 @@ function CloseTag($tag)
 {
     global $out, $indent;
     --$indent;
-    for ($i = 0; $i < $indent;
-    ++$i) {
+    for ($i = 0; $i < $indent; ++$i) {
         $out .= "\t";
     }
 
@@ -114,7 +113,7 @@ function xmlTime($str, $default = '9999-12-31T23:59:59')
 
     if (strlen($str) < 10 || substr($str, 0, 4) == '0000') {
         $str = $default;
-    } else if (strlen($str) > 10) {
+    } elseif (strlen($str) > 10) {
         $str = substr($str, 0, 10) . 'T' . substr($str, 11);
     } else {
         $str .= 'T00:00:00';
@@ -346,8 +345,10 @@ function endClient($pid, &$encarray)
                 continue;
             }
 
-            if ($key == 'id' || $key == 'type' || $key == 'begdate' ||
-            $key == 'enddate' || $key == 'title' || $key == 'diagnosis') {
+            if (
+                $key == 'id' || $key == 'type' || $key == 'begdate' ||
+                $key == 'enddate' || $key == 'title' || $key == 'diagnosis'
+            ) {
                 continue;
             }
 
@@ -438,8 +439,8 @@ function endFacility()
 }
 
 if (!empty($form_submit)) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $beg_year  = $_POST['form_year'];
@@ -681,7 +682,7 @@ if ($selmonth < 1) {
 <html>
 
 <head>
-<link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
+<?php Header::setupHeader(); ?>
 <title><?php echo xlt('Backup'); ?></title>
 </head>
 
@@ -689,7 +690,7 @@ if ($selmonth < 1) {
 <center>
 &nbsp;<br />
 <form method='post' action='ippf_export.php'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 
 <table style='width:30em'>
  <tr>

@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2006-2008 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -6,8 +7,8 @@
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
 
-include_once("../../globals.php");
-include_once($GLOBALS["srcdir"] . "/api.inc");
+require_once("../../globals.php");
+require_once($GLOBALS["srcdir"] . "/api.inc");
 
 function strength_conditioning_report($pid, $encounter, $cols, $id)
 {
@@ -34,7 +35,7 @@ function strength_conditioning_report($pid, $encounter, $cols, $id)
    }
 
    $key=ucwords(str_replace("_"," ",$key));
-   print "<td valign='top'><span class='bold'>$key: </span><span class='text'>$value &nbsp;</span></td>\n";
+   print "<td valign='top'><span class='bold'>" . text($key) . ": </span><span class='text'>" . text($value) . " &nbsp;</span></td>\n";
    $count++;
    if ($count == $cols) {
     $count = 0;

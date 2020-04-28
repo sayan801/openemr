@@ -1,4 +1,5 @@
 <?php
+
 /************************************************************************
                         prescription.php - Copyright duhlman
 
@@ -12,6 +13,9 @@ The original location of this file is /home/duhlman/uml-generated-code/prescript
  * class Provider
  *
  */
+
+use OpenEMR\Common\ORDataObject\ORDataObject;
+
 class Provider extends ORDataObject
 {
 
@@ -42,7 +46,7 @@ class Provider extends ORDataObject
 
     function populate()
     {
-        $res = sqlQuery("SELECT fname,lname,federaldrugid, specialty, npi, state_license_number FROM users where id =". add_escape_custom($this->id));
+        $res = sqlQuery("SELECT fname,lname,federaldrugid, specialty, npi, state_license_number FROM users where id ='" . add_escape_custom($this->id) . "'");
 
         if (is_array($res)) {
             $this->lname = $res['lname'];

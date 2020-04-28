@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Global Configuration Override
  *
@@ -14,6 +15,8 @@
  *
  */
 
+use OpenEMR\Common\Crypto\CryptoGen;
+
 // If to use utf-8 or not in my sql query
 $tmp = $GLOBALS['disable_utf8_flag'] ? "SET sql_mode = ''" : "SET NAMES 'UTF8', sql_mode = ''";
 $tmp .= ", time_zone = '" . (new DateTime())->format("P") . "'";
@@ -24,8 +27,10 @@ $utf8 = array(PDO::MYSQL_ATTR_INIT_COMMAND => $tmp);
 // Can also support client based certificate if also include mysql-cert and mysql-key (this is optional for ssl)
 if (file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-ca")) {
     $utf8[PDO::MYSQL_ATTR_SSL_CA ] = $GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-ca";
-    if (file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-key") &&
-        file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-cert")) {
+    if (
+        file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-key") &&
+        file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-cert")
+    ) {
         $utf8[PDO::MYSQL_ATTR_SSL_KEY] = $GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-key";
         $utf8[PDO::MYSQL_ATTR_SSL_CERT] = $GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-cert";
     }
@@ -33,35 +38,36 @@ if (file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-ca")) {
 
 // Sets default factory using the default database
 $factories = array(
-    'Zend\Db\Adapter\Adapter' => function ($serviceManager) {
-        $adapterFactory = new Zend\Db\Adapter\AdapterServiceFactory();
-        $adapter = $adapterFactory->createService($serviceManager);
-        \Zend\Db\TableGateway\Feature\GlobalAdapterFeature::setStaticAdapter($adapter);
+    'Laminas\Db\Adapter\Adapter' => function ($containerInterface, $requestedName) {
+        $adapterFactory = new Laminas\Db\Adapter\AdapterServiceFactory();
+        $adapter = $adapterFactory($containerInterface, $requestedName);
+        \Laminas\Db\TableGateway\Feature\GlobalAdapterFeature::setStaticAdapter($adapter);
         return $adapter;
     }
 );
 
 // This settings can be change in the global settings under security tab
+$adapters = array();
 if ($GLOBALS['allow_multiple_databases']) {
     // Open pdo connection
     $dbh = new PDO('mysql:dbname=' . $GLOBALS['dbase'] . ';host=' . $GLOBALS['host'], $GLOBALS['login'], $GLOBALS['pass']);
-    $adapters = array();
     $res = $dbh->prepare('SELECT * FROM multiple_db');
     if ($res->execute()) {
         foreach ($res->fetchAll() as $row) {
             // Create new adapters using data from database
+            $cryptoGen = new CryptoGen();
             $adapters[$row['namespace']] = array(
                 'driver' => 'Pdo',
                 'dsn' => 'mysql:dbname=' . $row['dbname'] . ';host=' . $row['host'] . '',
                 'driver_options' => $utf8,
                 'port' => $row['port'],
                 'username' => $row['username'],
-                'password' => (cryptCheckStandard($row['password'])) ? decryptStandard($row['password']) : my_decrypt($row['password']),
+                'password' => ($cryptoGen->cryptCheckStandard($row['password'])) ? $cryptoGen->decryptStandard($row['password']) : my_decrypt($row['password']),
             );
 
             // Create new factories using data from custom database
             $factories[$row['namespace']] = function ($serviceManager) use ($row) {
-                $adapterAbstractServiceFactory = new Zend\Db\Adapter\AdapterAbstractServiceFactory();
+                $adapterAbstractServiceFactory = new Laminas\Db\Adapter\AdapterAbstractServiceFactory();
                 $adapter = $adapterAbstractServiceFactory->createServiceWithName($serviceManager, '', $row['namespace']);
                 return $adapter;
             };
@@ -74,7 +80,7 @@ if ($GLOBALS['allow_multiple_databases']) {
 return array(
     'db' => array(
         'driver'         => 'Pdo',
-        'dsn'            => 'mysql:dbname='.$GLOBALS['dbase'].';host='.$GLOBALS['host'],
+        'dsn'            => 'mysql:dbname=' . $GLOBALS['dbase'] . ';host=' . $GLOBALS['host'],
         'username'       => $GLOBALS['login'],
         'password'       => $GLOBALS['pass'],
         'port'           => $GLOBALS['port'],
@@ -84,7 +90,7 @@ return array(
     ),
     'service_manager' => array(
         'factories' => $factories
-    ),
+    )
 );
 
 

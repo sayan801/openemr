@@ -1,6 +1,5 @@
 <?php
 
-
 class C_InsuranceCompany extends Controller
 {
 
@@ -12,10 +11,11 @@ class C_InsuranceCompany extends Controller
         parent::__construct();
         $this->icompanies = array();
         $this->template_mod = $template_mod;
-        $this->assign("FORM_ACTION", $GLOBALS['webroot']."/controller.php?" . attr($_SERVER['QUERY_STRING']));
-        $this->assign("CURRENT_ACTION", $GLOBALS['webroot']."/controller.php?" . "practice_settings&insurance_company&");
+        $this->assign("FORM_ACTION", $GLOBALS['webroot'] . "/controller.php?" . attr($_SERVER['QUERY_STRING']));
+        $this->assign("CURRENT_ACTION", $GLOBALS['webroot'] . "/controller.php?" . "practice_settings&insurance_company&");
         $this->assign("STYLE", $GLOBALS['style']);
         $this->assign("SUPPORT_ENCOUNTER_CLAIMS", $GLOBALS['support_encounter_claims']);
+        $this->assign("SUPPORT_ELIGIBILITY_REQUESTS", $GLOBALS['enable_oa']);
         $this->InsuranceCompany = new InsuranceCompany();
     }
 
@@ -28,7 +28,7 @@ class C_InsuranceCompany extends Controller
     {
         if ($p_obj != null && get_class($p_obj) == "insurancecompany") {
             $this->icompanies[0] = $p_obj;
-        } elseif (get_class($this->icompanies[0]) != "insurancecompany") {
+        } elseif ($this->icompanies[0] == null || get_class($this->icompanies[0]) != "insurancecompany") {
             $this->icompanies[0] = new InsuranceCompany($id);
         }
 
@@ -72,6 +72,6 @@ class C_InsuranceCompany extends Controller
 
         //echo "action processeed";
         $_POST['process'] = "";
-        header('Location:'.$GLOBALS['webroot']."/controller.php?" . "practice_settings&insurance_company&action=list");//Z&H
+        header('Location:' . $GLOBALS['webroot'] . "/controller.php?" . "practice_settings&insurance_company&action=list");//Z&H
     }
 }

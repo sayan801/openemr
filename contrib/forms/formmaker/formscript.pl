@@ -104,13 +104,8 @@ START
 my $date_field_exists = 0;
 my $date_header =<<'START';
 
-<script type="text/javascript" src="../../../library/dialog.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="../../../library/textformat.js?v=<?php echo $v_js_includes; ?>"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery/dist/jquery.min.js"></script>
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
-
 <script language='JavaScript'>
-$(document).ready(function(){
+$(function () {
     $('.datepicker').datetimepicker({
         <?php $datetimepicker_timepicker = false; ?>
         <?php $datetimepicker_showseconds = false; ?>
@@ -127,17 +122,20 @@ my $new_php =<<'START';
 <?php
 require_once("../../globals.php");
 require_once("$srcdir/api.inc");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
+
 formHeader("Form: FORM_NAME");
 ?>
 <html><head>
-<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+<?php Header::setupHeader('datetime-picker'); ?>
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 DATE_HEADER
 <a href='<?php echo $GLOBALS['form_exit_url']; ?>' onclick='top.restoreSession()'>[do not save]</a>
 <form method=post action="<?php echo $rootdir;?>/forms/FORM_NAME/save.php?mode=new" name="FORM_NAME" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <hr>
 <h1>FORM_NAME</h1>
 <hr>
@@ -154,14 +152,18 @@ my $print_php=<<'START';
 <?php
 require_once("../../globals.php");
 require_once("$srcdir/api.inc");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
+
 formHeader("Form: FORM_NAME");
 ?>
 <html><head>
-<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
+<?php Header::setupHeader('datetime-picker'); ?>
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 <form method=post action="<?php echo $rootdir;?>/forms/FORM_NAME/save.php?mode=new" name="my_form" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <h1> FORM_NAME </h1>
 <hr>
 DATABASEFIELDS
@@ -214,8 +216,10 @@ require_once("../../globals.php");
 require_once("$srcdir/api.inc");
 require_once("$srcdir/forms.inc");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 //process form variables here
@@ -293,7 +297,7 @@ my $noredirect=<<'START';
 $newid = formSubmit("form_FORM_NAME", $field_names, $_GET["id"], $userauthorized);
 addForm($encounter, "FORM_NAME", $newid, "FORM_NAME", $pid, $userauthorized);
 }elseif ($_GET["mode"] == "update") {
-sqlInsert("update form_FORM_NAME set pid = '" . add_escape_custom($_SESSION["pid"]) . "', groupname='" . add_escape_custom($_SESSION["authProvider"]) . "', user='" . add_escape_custom($_SESSION["authUser"]) . "', authorized='" . add_escape_custom($userauthorized) . "', activity=1, date = NOW(), FIELDS where id='" . add_escape_custom($id) . "'");
+sqlStatement("update form_FORM_NAME set pid = '" . add_escape_custom($_SESSION["pid"]) . "', groupname='" . add_escape_custom($_SESSION["authProvider"]) . "', user='" . add_escape_custom($_SESSION["authUser"]) . "', authorized='" . add_escape_custom($userauthorized) . "', activity=1, date = NOW(), FIELDS where id='" . add_escape_custom($id) . "'");
 }
 START
 
@@ -318,6 +322,10 @@ my $view_php =<<'START';
 <?php
 require_once("../../globals.php");
 require_once("$srcdir/api.inc");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
+
 formHeader("Form: FORM_NAME");
 $obj = formFetch("form_FORM_NAME", $_GET["id"]);  //#Use the formFetch function from api.inc to get values for existing form.
 
@@ -339,12 +347,12 @@ function chkdata_Radio(&$obj, $nam, $var) {
 
 ?>
 <html><head>
-<link rel=stylesheet href="<?php echo $css_header;?>" type="text/css">
+<?php Header::setupHeader('datetime-picker'); ?>
 </head>
 <body <?php echo $top_bg_line;?> topmargin=0 rightmargin=0 leftmargin=2 bottommargin=0 marginwidth=2 marginheight=0>
 DATE_HEADER
 <form method=post action="<?php echo $rootdir?>/forms/FORM_NAME/save.php?mode=update&id=<?php echo attr_url($_GET["id"]); ?>" name="my_form" onsubmit="return top.restoreSession()">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <h1> FORM_NAME </h1>
 <hr>
 DATABASEFIELDS
@@ -649,7 +657,7 @@ sub make_form #MAKE_FORM
 {
 	my @data = @_;
 	my $return = submit(-name=>'submit form');
-	$return .= '<br>'."\n";
+	$return .= '<br />'."\n";
 	$return .= "\n".'<table>'."\n\n" if $bigtable;
 	for (@data)
 	{
@@ -756,8 +764,8 @@ START
 		elsif (!$bigtable) #probably an html tag or something -- Get to this point if no Field_name and Field_type found in array.
 		{
 
-			  if ($_->[0] !~ /<br>\s*$|<\/td>\s*$|<\/tr>\s*$|<\/p>\s*$/) {
-			    $return .= '<br>'."\n";
+			  if ($_->[0] !~ /<br />\s*$|<\/td>\s*$|<\/tr>\s*$|<\/p>\s*$/) {
+			    $return .= '<br />'."\n";
 			  }
 
 			  $return .= $_->[0]."\n";

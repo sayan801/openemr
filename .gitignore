@@ -18,3 +18,5 @@ ccdaservice/node_modules
 
 # dev editor configs
 /.idea/*
+/nbproject/*
+.DS_Store

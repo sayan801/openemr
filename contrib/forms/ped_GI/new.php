@@ -12,9 +12,11 @@
 
 
 
-include_once("../../globals.php");
+require_once("../../globals.php");
 
-include_once("../../../library/api.inc");
+require_once("../../../library/api.inc");
+
+use OpenEMR\Core\Header;
 
 formHeader("Pediatric GI Evaluation");
 
@@ -23,9 +25,8 @@ formHeader("Pediatric GI Evaluation");
 ?>
 
 <html><head>
-<?php html_header_show();?>
 
-<link rel="stylesheet" href="<?php echo $css_header;?>" type="text/css">
+    <?php Header::setupHeader(); ?>
 
 </head>
 
@@ -37,7 +38,7 @@ formHeader("Pediatric GI Evaluation");
 
 
 
-<br>
+<br />
 
 <form method='post' action="<?php echo $rootdir;?>/forms/ped_GI/save.php?mode=new" name='ped_GI' >
 
@@ -47,9 +48,9 @@ formHeader("Pediatric GI Evaluation");
 
 <?php
 
-    $obj=array(); // just to avoid undeclared var warning
+    $obj = array(); // just to avoid undeclared var warning
 
-    include('form.php'); // to use a single file for both, empty and editing
+    require('form.php'); // to use a single file for both, empty and editing
 
 ?>
 
@@ -61,7 +62,7 @@ formHeader("Pediatric GI Evaluation");
 
 <a href="javascript:top.restoreSession();document.ped_GI.submit();" class="link_submit">[Save]</a>
 
-<br>
+<br />
 
 
 

@@ -1,24 +1,20 @@
 <?php
+
 /**
-* Sql functions/classes for OpenEMR.
-*
-* Includes classes and functions that OpenEMR uses
-* to interact with SQL.
-*
-* LICENSE: This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://opensource.org/licenses/gpl-license.php>.
-*
-* @package   OpenEMR
-* @link      http://www.open-emr.org
-*/
+ * Sql functions/classes for OpenEMR.
+ *
+ * Includes classes and functions that OpenEMR uses
+ * to interact with SQL.
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @author    Kevin Yeh <kevin.y@integralemr.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2013 Kevin Yeh <kevin.y@integralemr.com>
+ * @copyright Copyright (c) 2013 OEMR <www.oemr.org>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 require_once(dirname(__FILE__) . "/sqlconf.php");
 require_once(dirname(__FILE__) . "/../vendor/adodb/adodb-php/adodb.inc.php");
@@ -49,16 +45,16 @@ $GLOBALS['dbh'] = $database->_connectionID;
 
 // Modified 5/2009 by BM for UTF-8 project ---------
 if (!$disable_utf8_flag) {
-    $success_flag = $database->Execute("SET NAMES 'utf8'");
+    $success_flag = $database->ExecuteNoLog("SET NAMES 'utf8'");
     if (!$success_flag) {
-        error_log("PHP custom error: from openemr library/sql.inc  - Unable to set up UTF8 encoding with mysql database: ".getSqlLastError(), 0);
+        error_log("PHP custom error: from openemr library/sql.inc  - Unable to set up UTF8 encoding with mysql database: " . errorLogEscape(getSqlLastError()), 0);
     }
 }
 
 // Turn off STRICT SQL
-$sql_strict_set_success = $database->Execute("SET sql_mode = ''");
+$sql_strict_set_success = $database->ExecuteNoLog("SET sql_mode = ''");
 if (!$sql_strict_set_success) {
-    error_log("Unable to set strict sql setting: ".getSqlLastError(), 0);
+    error_log("Unable to set strict sql setting: " . errorLogEscape(getSqlLastError()), 0);
 }
 
 // set up associations in adodb calls (not sure why above define
@@ -66,7 +62,7 @@ if (!$sql_strict_set_success) {
 $GLOBALS['adodb']['db']->SetFetchMode(ADODB_FETCH_ASSOC);
 
 if ($GLOBALS['debug_ssl_mysql_connection']) {
-    error_log("CHECK SSL CIPHER IN MAIN ADODB: " . print_r($GLOBALS['adodb']['db']->ExecuteNoLog("SHOW STATUS LIKE 'Ssl_cipher';")->fields, true));
+    error_log("CHECK SSL CIPHER IN MAIN ADODB: " . errorLogEscape(print_r($GLOBALS['adodb']['db']->ExecuteNoLog("SHOW STATUS LIKE 'Ssl_cipher';")->fields, true)));
 }
 
 //fmg: This makes the login screen informative when no connection can be made
@@ -98,14 +94,14 @@ if (!$GLOBALS['dbh']) {
 */
 function sqlStatement($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-  // Use adodb Execute with binding and return a recordset.
-  //   Note that the auditSQLEvent function is embedded
-  //    in the Execute command.
+    // Use adodb Execute with binding and return a recordset.
+    //   Note that the auditSQLEvent function is embedded
+    //    in the Execute command.
     $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds);
     if ($recordset === false) {
         HelpfulDie("query failed: $statement", getSqlLastError());
@@ -134,12 +130,12 @@ function sqlStatement($statement, $binds = false)
 */
 function sqlStatementNoLog($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-  // Use adodb ExecuteNoLog with binding and return a recordset.
+    // Use adodb ExecuteNoLog with binding and return a recordset.
     $recordset = $GLOBALS['adodb']['db']->ExecuteNoLog($statement, $binds);
     if ($recordset === false) {
         HelpfulDie("query failed: $statement", getSqlLastError());
@@ -159,7 +155,7 @@ function sqlStatementNoLog($statement, $binds = false)
 */
 function sqlStatementCdrEngine($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -184,7 +180,7 @@ function sqlStatementCdrEngine($statement, $binds = false)
 */
 function sqlFetchArray($r)
 {
-  //treat as an adodb recordset
+    //treat as an adodb recordset
     if ($r === false) {
         return false;
     }
@@ -193,7 +189,7 @@ function sqlFetchArray($r)
         return false;
     }
 
-  //ensure it's an object (ie. is set)
+    //ensure it's an object (ie. is set)
     if (!is_object($r)) {
         return false;
     }
@@ -221,6 +217,10 @@ function sqlGetAssoc($sql, $bindvars = false, $forceArray = false, $first2Cols =
 
 /**
 * Standard sql insert query in OpenEMR.
+*  Only use this function if you need to have the
+*  id returned. If doing an insert query and do
+*  not need the id returned, then use the
+*  sqlStatement function instead.
 *
 * Function that will allow use of the adodb binding
 * feature to prevent sql-injection. This function
@@ -233,22 +233,22 @@ function sqlGetAssoc($sql, $bindvars = false, $forceArray = false, $first2Cols =
 */
 function sqlInsert($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
 
-  //Run a adodb execute
-  // Note the auditSQLEvent function is embedded in the
-  //   Execute function.
-    $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds);
+    //Run a adodb execute
+    // Note the auditSQLEvent function is embedded in the
+    //   Execute function.
+    $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds, true);
     if ($recordset === false) {
         HelpfulDie("insert failed: $statement", getSqlLastError());
     }
 
-  // Return the correct last id generated using function
-  //   that is safe with the audit engine.
-    return getSqlLastID();
+    // Return the correct last id generated using function
+    //   that is safe with the audit engine.
+    return $GLOBALS['lastidado'] > 0 ? $GLOBALS['lastidado'] : $GLOBALS['adodb']['db']->Insert_ID();
 }
 
 /**
@@ -264,7 +264,7 @@ function sqlInsert($statement, $binds = false)
 */
 function sqlQuery($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -303,7 +303,7 @@ function sqlQuery($statement, $binds = false)
 */
 function sqlQueryNoLog($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -343,7 +343,7 @@ function sqlQueryNoLog($statement, $binds = false)
 */
 function sqlQueryNoLogIgnoreError($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -378,7 +378,7 @@ function sqlQueryNoLogIgnoreError($statement, $binds = false)
 */
 function sqlQueryCdrEngine($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -404,17 +404,6 @@ function sqlInsertClean_audit($statement)
     if ($ret === false) {
         HelpfulDie("insert failed: $statement", getSqlLastError());
     }
-}
-
-/**
-* Function that will safely return the last ID inserted,
-* and accounts for the audit engine.
-*
-* @return  integer Last ID that was inserted into sql
-*/
-function getSqlLastID()
-{
-    return $GLOBALS['lastidado'] > 0 ? $GLOBALS['lastidado'] : $GLOBALS['adodb']['db']->Insert_ID();
 }
 
 /**
@@ -450,7 +439,7 @@ function getSqlLastErrorNo()
 */
 function sqlListFields($table)
 {
-    $sql = "SHOW COLUMNS FROM ". add_escape_custom($table);
+    $sql = "SHOW COLUMNS FROM " . add_escape_custom($table);
     $resource = sqlQ($sql);
     $field_list = array();
     while ($row = sqlFetchArray($resource)) {
@@ -486,14 +475,14 @@ function HelpfulDie($statement, $sqlerr = '')
         echo "<p><font color='red'>ERROR:</font> " . text($statement) . "</p>";
     }
 
-    $logMsg="SQL Error with statement:".$statement;
+    $logMsg = "SQL Error with statement:" . $statement;
 
     if ($sqlerr) {
         if (!$GLOBALS['sql_string_no_show_screen']) {
              echo "<p>Error: <font color='red'>" . text($sqlerr) . "</font></p>";
         }
 
-        $logMsg.="--".$sqlerr;
+        $logMsg .= "--" . $sqlerr;
     }//if error
 
     $backtrace = debug_backtrace();
@@ -501,16 +490,16 @@ function HelpfulDie($statement, $sqlerr = '')
     if (!$GLOBALS['sql_string_no_show_screen']) {
         for ($level = 1; $level < count($backtrace); $level++) {
             $info = $backtrace[$level];
-            echo "<br>" . text($info["file"] . " at " . $info["line"] . ":" . $info["function"]);
+            echo "<br />" . text($info["file"] . " at " . $info["line"] . ":" . $info["function"]);
             if ($level > 1) {
                 echo "(" . text(implode(",", $info["args"])) . ")";
             }
         }
     }
 
-    $logMsg.="==>".$backtrace[1]["file"]." at ".$backtrace[1]["line"].":".$backtrace[1]["function"];
+    $logMsg .= "==>" . $backtrace[1]["file"] . " at " . $backtrace[1]["line"] . ":" . $backtrace[1]["function"];
 
-    error_log($logMsg);
+    error_log(errorLogEscape($logMsg));
 
     exit;
 }
@@ -542,7 +531,7 @@ function generate_id()
 */
 function sqlQ($statement, $binds = false)
 {
-  // Below line is to avoid a nasty bug in windows.
+    // Below line is to avoid a nasty bug in windows.
     if (empty($binds)) {
         $binds = false;
     }
@@ -550,48 +539,6 @@ function sqlQ($statement, $binds = false)
     $recordset = $GLOBALS['adodb']['db']->Execute($statement, $binds) or
     HelpfulDie("query failed: $statement", getSqlLastError());
     return $recordset;
-}
-
-/**
-* Simple wrapper for sqlInsert() function (deprecated).
-*
-* Function that will allow use of the adodb binding feature
-* to prevent sql-injection.
-*
-* @deprecated
-* @param  string   $statement  query
-* @param  array    $binds      binded variables array (optional)
-* @return integer  Last id generated from the sql insert command
-*/
-function idSqlStatement($statement, $binds = false)
-{
-  // Below line is to avoid a nasty bug in windows.
-    if (empty($binds)) {
-        $binds = false;
-    }
-
-    return sqlInsert($statement, $binds);
-}
-
-/**
-* Simple wrapper for sqlInsert() function (deprecated).
-*
-* Function that will allow use of the adodb binding feature
-* to prevent sql-injection.
-*
-* @deprecated
-* @param  string   $statement  query
-* @param  array    $binds      binded variables array (optional)
-* @return integer  Last id generated from the sql insert command
-*/
-function sqlInsertClean($statement, $binds = false)
-{
-  // Below line is to avoid a nasty bug in windows.
-    if (empty($binds)) {
-        $binds = false;
-    }
-
-    return sqlInsert($statement, $binds);
 }
 
 
@@ -683,4 +630,116 @@ function sqlCommitTrans($ok = true)
 function sqlRollbackTrans()
 {
     $GLOBALS['adodb']['db']->RollbackTrans();
+}
+
+/**
+ * For the 3 functions below:
+ *
+ * To support an optional higher level of security, queries that access password
+ * related information use these functions instead of the standard functions
+ * provided by sql.inc.
+ *
+ * By default, the privQuery and privStatement calls pass-through to
+ * the existing ADODB instance initialized by sql.inc.
+ *
+ * If an additional configuration file is created (secure_sqlconf.php) and saved
+ * in the sites/<sitename> directory (e.g. sites/default).  The MySQL login
+ * information defined in that file as $secure_* will be used to create an ADODB
+ * instance specifically for querying privileged information.
+ *
+ * By configuring a server in this way, the default MySQL user can be denied access
+ * to sensitive tables (currently only "users_secure" would qualify).  Thus
+ * the likelyhood of unintended modification can be reduced (e.g. through SQL Injection).
+ *
+ * Details on how to set this up are included in Documentation/privileged_db/priv_db_HOWTO
+ *
+ * The trade off for this additional security is extra complexity in configuration and
+ * maintenance of the database, hence it is not enabled at install time and must be
+ * done manually.
+ *
+ */
+function getPrivDB()
+{
+    if (!isset($GLOBALS['PRIV_DB'])) {
+        $secure_config = $GLOBALS['OE_SITE_DIR'] . "/secure_sqlconf.php";
+        if (file_exists($secure_config)) {
+            require_once($secure_config);
+            $GLOBALS['PRIV_DB'] = NewADOConnection("mysqli_log"); // Use the subclassed driver which logs execute events
+            // Below optionFlags flag is telling the mysql connection to ensure local_infile setting,
+            // which is needed to import data in the Administration->Other->External Data Loads feature.
+            // (Note the MYSQLI_READ_DEFAULT_GROUP is just to keep the current setting hard-coded in adodb)
+            $GLOBALS['PRIV_DB']->optionFlags = array(array(MYSQLI_READ_DEFAULT_GROUP,0), array(MYSQLI_OPT_LOCAL_INFILE,1));
+            // Set mysql to use ssl, if applicable.
+            // Can support basic encryption by including just the mysql-ca pem (this is mandatory for ssl)
+            // Can also support client based certificate if also include mysql-cert and mysql-key (this is optional for ssl)
+            if (file_exists($GLOBALS['OE_SITE_DIR'] . "/documents/certificates/mysql-ca")) {
+                if (defined('MYSQLI_CLIENT_SSL')) {
+                    $GLOBALS['PRIV_DB']->clientFlags = MYSQLI_CLIENT_SSL;
+                }
+            }
+            $GLOBALS['PRIV_DB']->port = $port;
+            $GLOBALS['PRIV_DB']->PConnect($secure_host, $secure_login, $secure_pass, $secure_dbase);
+            // set up associations in adodb calls
+            $GLOBALS['PRIV_DB']->SetFetchMode(ADODB_FETCH_ASSOC);
+            // debug hook for ssl stuff
+            if ($GLOBALS['debug_ssl_mysql_connection']) {
+                error_log("CHECK SSL CIPHER IN PRIV_DB ADODB: " . errorLogEscape(print_r($GLOBALS[PRIV_DB]->ExecuteNoLog("SHOW STATUS LIKE 'Ssl_cipher';")->fields), true));
+            }
+        } else {
+            $GLOBALS['PRIV_DB'] = $GLOBALS['adodb']['db'];
+        }
+    }
+
+    return $GLOBALS['PRIV_DB'];
+}
+/**
+ * mechanism to use "super user" for SQL queries related to password operations
+ *
+ * @param type $sql
+ * @param type $params
+ * @return type
+ */
+function privStatement($sql, $params = null)
+{
+    if (is_array($params)) {
+        $recordset = getPrivDB()->ExecuteNoLog($sql, $params);
+    } else {
+        $recordset = getPrivDB()->ExecuteNoLog($sql);
+    }
+
+    if ($recordset === false) {
+        // These error messages are explictly NOT run through xl() because we still
+        // need them if there is a database problem.
+        echo "Failure during database access! Check server error log.";
+        $backtrace = debug_backtrace();
+
+        error_log("Executing as user:" . errorLogEscape(getPrivDB()->user) . " Statement failed:" . errorLogEscape($sql) . ":" . errorLogEscape($GLOBALS['last_mysql_error'])
+            . "==>" . errorLogEscape($backtrace[1]["file"]) . " at " . errorLogEscape($backtrace[1]["line"]) . ":" . errorLogEscape($backtrace[1]["function"]));
+        exit;
+    }
+
+    return $recordset;
+}
+/**
+ *
+ * Wrapper for privStatement that just returns the first row of a query or FALSE
+ * if there were no results.
+ *
+ * @param type $sql
+ * @param type $params
+ * @return boolean
+ */
+function privQuery($sql, $params = null)
+{
+    $recordset = privStatement($sql, $params);
+    if ($recordset->EOF) {
+        return false;
+    }
+
+    $rez = $recordset->FetchRow();
+    if ($rez == false) {
+        return false;
+    }
+
+    return $rez;
 }

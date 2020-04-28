@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Interactive code finder.
  * For DataTables documentation see: http://legacy.datatables.net/
@@ -17,6 +18,7 @@ require_once($GLOBALS['srcdir'] . '/patient.inc');
 require_once($GLOBALS['srcdir'] . '/csv_like_join.php');
 require_once($GLOBALS['fileroot'] . '/custom/code_types.inc.php');
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 $info_msg = "";
@@ -43,28 +45,23 @@ $layout_id = empty($_GET['layout_id']) ? '' : $_GET['layout_id'];
 <head>
 <title><?php echo xlt('Code Finder'); ?></title>
 
-<?php Header::setupHeader(['opener']); ?>
+<?php Header::setupHeader(['opener', 'datatables', 'datatables-dt', 'datatables-colreorder']); ?>
 
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/datatables.net-dt/css/jquery.dataTables.css" type="text/css">
-<link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/datatables.net-colreorder-dt/css/colReorder.dataTables.css" type="text/css">
-
-<script type="text/javascript" src="<?php echo $GLOBALS['assets_static_relative']; ?>/datatables.net/js/jquery.dataTables.js"></script>
-
-<script language="JavaScript">
+<script>
 
 var oTable;
 
 // Keeps track of which items have been selected during this session.
 var oChosenIDs = {};
 
-$(document).ready(function() {
+$(function () {
 
  // Initializing the DataTable.
  oTable = $('#my_data_table').dataTable({
   "bProcessing": true,
   // Next 2 lines invoke server side processing
   "bServerSide": true,
-  "sAjaxSource": "find_code_dynamic_ajax.php?csrf_token_form=" + <?php echo js_url(collectCsrfToken()); ?>,
+  "sAjaxSource": "find_code_dynamic_ajax.php?csrf_token_form=" + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>,
   // Vertical length options and their default
   "aLengthMenu": [ 15, 25, 50, 100 ],
   "iDisplayLength": 15,
@@ -76,9 +73,9 @@ $(document).ready(function() {
 <?php if ($what == 'codes') { ?>
     aoData.push({"name": "codetype", "value": document.forms[0].form_code_type.value});
     aoData.push({"name": "inactive", "value": (document.forms[0].form_include_inactive.checked ? 1 : 0)});
-<?php } else if ($what == 'fields') { ?>
+<?php } elseif ($what == 'fields') { ?>
     aoData.push({"name": "source", "value": <?php echo js_escape($source); ?>});
-<?php } else if ($what == 'groups') { ?>
+<?php } elseif ($what == 'groups') { ?>
     aoData.push({"name": "layout_id", "value": <?php echo js_escape($layout_id); ?>});
 <?php } ?>
   },
@@ -116,11 +113,11 @@ $(document).ready(function() {
   // this.id is of the form "CID|jsonstring".
   var codesel = jobj['code'].split('|');
   selcode(jobj['codetype'], codesel[0], codesel[1], jobj['description']);
-<?php } else if ($what == 'fields') { ?>
+<?php } elseif ($what == 'fields') { ?>
   selectField(jobj);
-<?php } else if ($what == 'lists') { ?>
+<?php } elseif ($what == 'lists') { ?>
   SelectList(jobj);
-<?php } else if ($what == 'groups') { ?>
+<?php } elseif ($what == 'groups') { ?>
   SelectItem(jobj);
 <?php } ?>
 
@@ -145,7 +142,6 @@ $(document).ready(function() {
 });
 
 <?php if ($what == 'codes') { ?>
-
 // Pass info back to the opener and close this window. Specific to billing/product codes.
 function selcode(codetype, code, selector, codedesc) {
  if (opener.closed || ! opener.set_related) {
@@ -173,8 +169,7 @@ function delcode() {
  }
 }
 
-<?php } else if ($what == 'fields') { ?>
-
+<?php } elseif ($what == 'fields') { ?>
 function selectField(jobj) {
   if (opener.closed || ! opener.SetField) {
     alert('The destination form was closed; I cannot act on your selection.');
@@ -204,8 +199,7 @@ function newField() {
   });
 }
 
-<?php } else if ($what == 'lists') { ?>
-
+<?php } elseif ($what == 'lists') { ?>
 function SelectList(jobj) {
   if (opener.closed || ! opener.SetList)
     alert('The destination form was closed; I cannot act on your selection.');
@@ -215,8 +209,7 @@ function SelectList(jobj) {
   return false;
 };
 
-<?php } else if ($what == 'groups') { ?>
-
+<?php } elseif ($what == 'groups') { ?>
 var SelectItem = function(jobj) {
   if (opener.closed)
     alert('The destination form was closed; I cannot act on your selection.');

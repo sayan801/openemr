@@ -1,28 +1,19 @@
 <?php
-/* +-----------------------------------------------------------------------------+
-*    OpenEMR - Open Source Electronic Medical Record
-*    Copyright (C) 2013 Z&H Consultancy Services Private Limited <sam@zhservices.com>
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU Affero General Public License as
-*    published by the Free Software Foundation, either version 3 of the
-*    License, or (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU Affero General Public License for more details.
-*
-*    You should have received a copy of the GNU Affero General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*    @author  Remesh Babu S <remesh@zhservices.com>
-* +------------------------------------------------------------------------------+
-*/
+
+/**
+ * interface/modules/zend_modules/module/Application/src/Application/Model/ApplicationTable.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Remesh Babu S <remesh@zhservices.com>
+ * @copyright Copyright (c) 2013 Z&H Consultancy Services Private Limited <sam@zhservices.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 namespace Application\Model;
 
-use Zend\Db\TableGateway\AbstractTableGateway;
-use Zend\Db\ResultSet\ResultSet;
+use Laminas\Db\TableGateway\AbstractTableGateway;
+use Laminas\Db\ResultSet\ResultSet;
 use OpenEMR\Common\Logging\EventAuditLogger;
 
 class ApplicationTable extends AbstractTableGateway
@@ -32,11 +23,12 @@ class ApplicationTable extends AbstractTableGateway
 
     /**
      *
-     * @param \Zend\Db\Adapter\Adapter $adapter
+     * @param \Laminas\Db\Adapter\Adapter $adapter
      */
     public function __construct()
     {
-        $adapter = \Zend\Db\TableGateway\Feature\GlobalAdapterFeature::getStaticAdapter();
+        // TODO: I can't find any reason why we grab the static adapter instead of injecting a regular DB adapter here...
+        $adapter = \Laminas\Db\TableGateway\Feature\GlobalAdapterFeature::getStaticAdapter();
         $this->adapter = $adapter;
         $this->resultSetPrototype = new ResultSet();
         $this->resultSetPrototype->setArrayObjectPrototype(new Application());
@@ -61,7 +53,7 @@ class ApplicationTable extends AbstractTableGateway
         if ($GLOBALS['debug_ssl_mysql_connection']) {
             $temp_return = $this->adapter->query("SHOW STATUS LIKE 'Ssl_cipher';")->execute();
             foreach ($temp_return as $temp_row) {
-                error_log("CHECK SSL CIPHER IN ZEND: " . print_r($temp_row, true));
+                error_log("CHECK SSL CIPHER IN ZEND: " . errorLogEscape(print_r($temp_row, true)));
             }
         }
 
@@ -69,7 +61,7 @@ class ApplicationTable extends AbstractTableGateway
             $statement  = $this->adapter->query($sql);
             $return     = $statement->execute($params);
             $result     = true;
-        } catch (\Zend\Db\Adapter\ExceptionInterface $e) {
+        } catch (\Laminas\Db\Adapter\ExceptionInterface $e) {
             if ($error) {
                 $this->errorHandler($e, $sql, $params);
             }
@@ -107,7 +99,7 @@ class ApplicationTable extends AbstractTableGateway
      */
     public function errorHandler($e, $sql, $binds = '')
     {
-        $escaper = new \Zend\Escaper\Escaper('utf-8');
+        $escaper = new \Laminas\Escaper\Escaper('utf-8');
         $trace  = $e->getTraceAsString();
         $nLast = strpos($trace, '[internal function]');
         $trace = substr($trace, 0, ($nLast - 3));
@@ -145,7 +137,7 @@ class ApplicationTable extends AbstractTableGateway
         /** Error Logging */
         $logMsg .= "\n SQL statement : $sql" . $processedBinds;
         $logMsg .= "\n $trace";
-        error_log("ERROR: " . $logMsg, 0);
+        error_log("ERROR: " . errorLogEscape($logMsg), 0);
     }
 
     /**
@@ -162,12 +154,12 @@ class ApplicationTable extends AbstractTableGateway
 
     /**
      * Function zAclCheck
-     * Check ACL in Zend
+     * Check ACL in Laminas
      *
      * Same Functionality in the OpemEMR
      * for Left Nav ACL Check
-     * Path openemr/library/acl.inc
-     * Function Name zh_acl_check
+     * Path openemr/src/Common/Acl/AclMain.php
+     * Function Name zhAclCheck
      *
      * @param int     $user_id Auth user Id
      * $param String  $section_identifier ACL Section id
@@ -362,13 +354,13 @@ class ApplicationTable extends AbstractTableGateway
     * @param    Date format set in GLOBALS
     * @return   Date format in PHP
     **/
-    public function dateFormat($format = null)
+    public static function dateFormat($format = null)
     {
         if ($format == "0") {
             $date_format = 'yyyy/mm/dd';
-        } else if ($format == 1) {
+        } elseif ($format == 1) {
             $date_format = 'mm/dd/yyyy';
-        } else if ($format == 2) {
+        } elseif ($format == 2) {
             $date_format = 'dd/mm/yyyy';
         } else {
             $date_format = $format;
@@ -414,7 +406,7 @@ class ApplicationTable extends AbstractTableGateway
 
         $output_date = implode($seperator_output, $output_date_arr);
 
-        $output_date = $temp[1] ? $output_date." ".$temp[1] : $output_date; //append the time, if exists, with the new formatted date
+        $output_date = $temp[1] ? $output_date . " " . $temp[1] : $output_date; //append the time, if exists, with the new formatted date
         return $output_date;
     }
 

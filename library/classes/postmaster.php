@@ -1,4 +1,5 @@
 <?php
+
 /**
  * MyMailer class
  *
@@ -10,7 +11,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
+use OpenEMR\Common\Crypto\CryptoGen;
 use PHPMailer\PHPMailer\PHPMailer;
 
 class MyMailer extends PHPMailer
@@ -42,7 +43,8 @@ class MyMailer extends PHPMailer
                 $this->SMTPAuth = $SMTP_Auth;
                 $this->Host = $GLOBALS['SMTP_HOST'];
                 $this->Username = $GLOBALS['SMTP_USER'];
-                $this->Password = decryptStandard($GLOBALS['SMTP_PASS']);
+                $cryptoGen = new CryptoGen();
+                $this->Password = $cryptoGen->decryptStandard($GLOBALS['SMTP_PASS']);
                 $this->Port = $GLOBALS['SMTP_PORT'];
                 $this->SMTPSecure = $GLOBALS['SMTP_SECURE'];
                 break;

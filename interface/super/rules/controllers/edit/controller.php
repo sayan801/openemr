@@ -1,10 +1,16 @@
 <?php
- // Copyright (C) 2010-2011 Aron Racho <aron@mi-squred.com>
- //
- // This program is free software; you can redistribute it and/or
- // modify it under the terms of the GNU General Public License
- // as published by the Free Software Foundation; either version 2
- // of the License, or (at your option) any later version.
+
+/**
+ * interface/super/rules/controllers/edit/controller.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Aron Racho <aron@mi-squared.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2010-2011 Aron Racho <aron@mi-squared.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 class Controller_edit extends BaseController
 {
@@ -39,9 +45,9 @@ class Controller_edit extends BaseController
             // its a new rule submit
             $ruleId = $this->getRuleManager()->updateSummary($ruleId, $types, $title, $developer, $funding, $release, $web_ref);
             // redirect to the intervals page
-            $this->redirect("index.php?action=edit!intervals&id=$ruleId");
+            $this->redirect("index.php?action=edit!intervals&id=" . urlencode($ruleId));
         } else {
-            $this->redirect("index.php?action=detail!view&id=$ruleId");
+            $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
         }
     }
 
@@ -83,7 +89,7 @@ class Controller_edit extends BaseController
             $this->getRuleManager()->updateIntervals($rule, $intervals);
         }
 
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_filter()
@@ -108,7 +114,7 @@ class Controller_edit extends BaseController
         $rule = $this->getRuleManager()->getRule($ruleId);
         $guid = _get('guid');
         $this->getRuleManager()->deleteRuleFilter($rule, $guid);
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_target()
@@ -133,7 +139,7 @@ class Controller_edit extends BaseController
         $rule = $this->getRuleManager()->getRule($ruleId);
         $guid = _get('guid');
         $this->getRuleManager()->deleteRuleTarget($rule, $guid);
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_codes()
@@ -141,14 +147,14 @@ class Controller_edit extends BaseController
         $search = _get('q');
         $codes = $this->getCodeManager()->search($search);
         foreach ($codes as $code) {
-            echo $code->display() . "|". $code->id . "\n";
+            echo text($code->display()) . "|" . text($code->id) . "\n";
         }
     }
 
     function _action_categories()
     {
         $stmts = sqlStatement("SELECT option_id, title FROM list_options WHERE list_id = 'rule_action_category' AND activity = 1");
-        for ($iter=0; $row=sqlFetchArray($stmts); $iter++) {
+        for ($iter = 0; $row = sqlFetchArray($stmts); $iter++) {
             $columns[] = array( "code" => $row['option_id'], "lbl" => xl_list_label($row['title']) );
         }
 
@@ -158,7 +164,7 @@ class Controller_edit extends BaseController
     function _action_items()
     {
         $stmts = sqlStatement("SELECT option_id, title FROM list_options WHERE list_id = 'rule_action' AND activity = 1");
-        for ($iter=0; $row=sqlFetchArray($stmts); $iter++) {
+        for ($iter = 0; $row = sqlFetchArray($stmts); $iter++) {
             $columns[] = array( "code" => $row['option_id'], "lbl" => xl_list_label($row['title']) );
         }
 
@@ -169,8 +175,8 @@ class Controller_edit extends BaseController
     {
         $columns = array();
         $table = _get('table');
-        $stmts = sqlStatement("SHOW COLUMNS FROM " . $table);
-        for ($iter=0; $row=sqlFetchArray($stmts); $iter++) {
+        $stmts = sqlStatement("SHOW COLUMNS FROM " . escape_table_name($table));
+        for ($iter = 0; $row = sqlFetchArray($stmts); $iter++) {
             $columns[] = $row['Field'];
         }
 
@@ -209,7 +215,7 @@ class Controller_edit extends BaseController
             }
         }
 
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_action()
@@ -230,7 +236,7 @@ class Controller_edit extends BaseController
         $rule = $this->getRuleManager()->getRule($ruleId);
         $guid = _get('guid');
         $action = $this->getRuleManager()->deleteRuleAction($rule, $guid);
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_add_action()
@@ -281,7 +287,7 @@ class Controller_edit extends BaseController
         $action->targetCriteria = $fld_target_criteria;
 
         $this->getRuleManager()->updateRuleAction($action);
-        $this->redirect("index.php?action=detail!view&id=$ruleId");
+        $this->redirect("index.php?action=detail!view&id=" . urlencode($ruleId));
     }
 
     function _action_add_criteria()

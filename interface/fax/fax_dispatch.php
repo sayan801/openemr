@@ -1,4 +1,5 @@
 <?php
+
 /**
  * fax dispatch
  *
@@ -11,7 +12,6 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
 require_once("$srcdir/pnotes.inc");
@@ -19,11 +19,12 @@ require_once("$srcdir/forms.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/gprelations.inc.php");
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 use OpenEMR\Core\Header;
 
 if ($_GET['file']) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $mode = 'fax';
@@ -33,9 +34,9 @@ if ($_GET['file']) {
     check_file_dir_name($filename);
 
     $filepath = $GLOBALS['hylafax_basedir'] . '/recvq/' . $filename;
-} else if ($_GET['scan']) {
-    if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-        csrfNotVerified();
+} elseif ($_GET['scan']) {
+    if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $mode = 'scan';
@@ -105,8 +106,8 @@ function mergeTiffs()
 // If we are submitting...
 //
 if ($_POST['form_save']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $action_taken = false;
@@ -155,7 +156,7 @@ if ($_POST['form_save']) {
             $info_msg .= mergeTiffs();
             // The -j option here requires that libtiff is configured with libjpeg.
             // It could be omitted, but the output PDFs would then be quite large.
-            $tmp0 = exec("tiff2pdf -j -p letter -o " . escapeshellarg($target) . " " . escapeshellarg($faxcache.'/temp.tif'), $tmp1, $tmp2);
+            $tmp0 = exec("tiff2pdf -j -p letter -o " . escapeshellarg($target) . " " . escapeshellarg($faxcache . '/temp.tif'), $tmp1, $tmp2);
 
             if ($tmp2) {
                 $info_msg .= "tiff2pdf returned $tmp2: $tmp0 ";
@@ -170,7 +171,7 @@ if ($_POST['form_save']) {
                 "?, 'file_url', ?, NOW(), ?, " .
                 "'application/pdf', ?, ? " .
                 ")";
-                sqlStatement($query, array($newid, $fsize, 'file://'.$target, $patient_id, $docdate));
+                sqlStatement($query, array($newid, $fsize, 'file://' . $target, $patient_id, $docdate));
                 $query = "INSERT INTO categories_to_documents ( " .
                 "category_id, document_id" .
                 " ) VALUES ( " .
@@ -207,11 +208,8 @@ if ($_POST['form_save']) {
                 // Link the new patient note to the document.
                 setGpRelation(1, $newid, 6, $noteid);
             } // end post patient note
-        } // end copy to documents
-
-        // Otherwise creating a scanned encounter note...
-        //
-        else {
+        } else { // end copy to documents
+            // Otherwise creating a scanned encounter note...
             // Get desired $encounter_id.
             $encounter_id = 0;
             if (empty($_POST['form_copy_sn_visit'])) {
@@ -248,7 +246,7 @@ if ($_POST['form_save']) {
                         die("mkdir returned " . text($tmp2) . ": " . text($tmp0));
                     }
 
-                        exec("touch " . escapeshellarg($imagedir."/index.html"));
+                        exec("touch " . escapeshellarg($imagedir . "/index.html"));
                 }
 
                 if (is_file($imagepath)) {
@@ -315,7 +313,7 @@ if ($_POST['form_save']) {
         $cpstring = str_replace('{MESSAGE}', $form_message, $cpstring);
         fwrite($tmph, $cpstring);
         fclose($tmph);
-        $tmp0 = exec("cd " . escapeshellarg($webserver_root.'/custom') . "; " . escapeshellcmd($GLOBALS['hylafax_enscript']) .
+        $tmp0 = exec("cd " . escapeshellarg($webserver_root . '/custom') . "; " . escapeshellcmd($GLOBALS['hylafax_enscript']) .
         " -o " . escapeshellarg($tmpfn2) . " " . escapeshellarg($tmpfn1), $tmp1, $tmp2);
         if ($tmp2) {
               $info_msg .= "enscript returned $tmp2: $tmp0 ";
@@ -327,7 +325,7 @@ if ($_POST['form_save']) {
         $info_msg .= mergeTiffs();
         $tmp0 = exec(
             "sendfax -A -n " . escapeshellarg($form_finemode) . " -d " .
-            escapeshellarg($form_fax) . " " . escapeshellarg($tmpfn2) . " " . escapeshellarg($faxcache.'/temp.tif'),
+            escapeshellarg($form_fax) . " " . escapeshellarg($tmpfn2) . " " . escapeshellarg($faxcache . '/temp.tif'),
             $tmp1,
             $tmp2
         );
@@ -431,7 +429,7 @@ if (! is_dir($faxcache)) {
         // convert's default density for PDF-to-TIFF conversion is 72 dpi which is
         // not very good, so we upgrade it to "fine mode" fax quality.  It's really
         // better and faster if the scanner produces TIFFs instead of PDFs.
-        $tmp0 = exec("convert -density 203x196 " . escapeshellarg($filepath) . " " . escapeshellarg($faxcache.'/deleteme.tif'), $tmp1, $tmp2);
+        $tmp0 = exec("convert -density 203x196 " . escapeshellarg($filepath) . " " . escapeshellarg($faxcache . '/deleteme.tif'), $tmp1, $tmp2);
         if ($tmp2) {
             die("convert returned " . text($tmp2) . ": " . text($tmp0));
         }
@@ -517,7 +515,7 @@ div.section {
   // This loads the patient's list of recent encounters:
   f.form_copy_sn_visit.options.length = 0;
   f.form_copy_sn_visit.options[0] = new Option('Loading...', '0');
-  $.getScript("fax_dispatch_newpid.php?p=" + encodeURIComponent(pid) + "&csrf_token_form=" + <?php echo js_url(collectCsrfToken()); ?>);
+  $.getScript("fax_dispatch_newpid.php?p=" + encodeURIComponent(pid) + "&csrf_token_form=" + <?php echo js_url(CsrfUtils::collectCsrfToken()); ?>);
 <?php } ?>
  }
 
@@ -602,7 +600,7 @@ div.section {
   }
  }
 
-    $(document).ready(function(){
+    $(function () {
         $('.datepicker').datetimepicker({
             <?php $datetimepicker_timepicker = false; ?>
             <?php $datetimepicker_showseconds = false; ?>
@@ -620,8 +618,8 @@ div.section {
 <center><h2><?php echo xlt('Dispatch Received Document'); ?></h2></center>
 
 <form method='post' name='theform'
- action='fax_dispatch.php?<?php echo ($mode == 'fax') ? 'file' : 'scan'; ?>=<?php echo attr_url($filename); ?>&csrf_token_form=<?php echo attr_url(collectCsrfToken()); ?>' onsubmit='return validate()'>
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+ action='fax_dispatch.php?<?php echo ($mode == 'fax') ? 'file' : 'scan'; ?>=<?php echo attr_url($filename); ?>&csrf_token_form=<?php echo attr_url(CsrfUtils::collectCsrfToken()); ?>' onsubmit='return validate()'>
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 
 <p><input type='checkbox' name='form_cb_copy' value='1'
  onclick='return divclick(this,"div_copy");' />
@@ -714,7 +712,7 @@ foreach ($categories as $catkey => $catname) {
        <td>
         <?php
          // Added 6/2009 by BM to incorporate the patient notes into the list_options listings
-         generate_form_field(array('data_type'=>1,'field_id'=>'note_type','list_id'=>'note_type','empty_title'=>'SKIP'), '');
+         generate_form_field(array('data_type' => 1,'field_id' => 'note_type','list_id' => 'note_type','empty_title' => 'SKIP'), '');
         ?>
        </td>
       </tr>
@@ -765,7 +763,7 @@ while ($urow = sqlFetchArray($ures)) {
    </td>
   </tr>
   <tr>
-   <td class='itemtitle' nowrap><?php echo xlt('To'); ?></td>
+   <td class='itemtitle' nowrap><?php echo xlt('To{{Destination}}'); ?></td>
    <td>
     <input type='text' size='10' name='form_to' style='width:100%'
      title='Type the recipient name here' />

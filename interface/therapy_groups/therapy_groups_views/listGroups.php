@@ -1,43 +1,37 @@
 <?php
+
 /**
  * interface/therapy_groups/therapy_groups_views/listGroups.php contains the group list view .
  *
  * In this view all therapy groups are listed with their details and links to their details screen.
  *
- * Copyright (C) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>
- * Copyright (C) 2016 Amiel Elboim <amielel@matrix.co.il>
- *
- * LICENSE: This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
- *
- * @package OpenEMR
- * @author  Shachar Zilbershlag <shaharzi@matrix.co.il>
- * @author  Amiel Elboim <amielel@matrix.co.il>
- * @link    http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Shachar Zilbershlag <shaharzi@matrix.co.il>
+ * @author    Amiel Elboim <amielel@matrix.co.il>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2016 Shachar Zilbershlag <shaharzi@matrix.co.il>.
+ * @copyright Copyright (c) 2016 Amiel Elboim <amielel@matrix.co.il>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+use OpenEMR\Common\Acl\AclMain;
+
 ?>
-<?php $edit = acl_check("groups", "gadd", false, 'write');?>
-<?php $view = acl_check("groups", "gadd", false, 'view');?>
+<?php $edit = AclMain::aclCheckCore("groups", "gadd", false, 'write');?>
+<?php $view = AclMain::aclCheckCore("groups", "gadd", false, 'view');?>
 
 
 <?php require 'header.php'; ?>
 <?php if ($view || $edit) :?>
-
 <span class="hidden title"><?php echo xlt('Therapy Group Finder');?></span>
 <div id="therapy_groups_list_container" class="container">
 
     <!--------- ERRORS ----------->
     <?php if ($deletion_try == 1 && $deletion_response['success'] == 0) :?>
         <div class="row">
-            <div class="col-md-6 col-md-offset-3">
+            <div class="col-md-6 offset-md-3">
                 <div class="alert alert-danger text-center">
                     <p class="failed_message"><?php echo xlt($deletion_response['message']);?></p>
                 </div>
@@ -50,7 +44,7 @@
     <button id="clear_filters" class="btn"><?php echo xlt("Clear Filters")?></button>
     <?php endif;?>
 
-    </br></br></br>
+    <br /><br /><br />
     <div id="filters">
         <div class="row">
             <div class=" form-group col-md-2">
@@ -115,7 +109,7 @@
     </div>
     <!---------- END OF FILTERS SECTION ------------->
 
-    </br></br>
+    <br /><br />
 
     <!---------- TABLE SECTION -------------->
     <div class="row">
@@ -136,7 +130,7 @@
             <tbody>
             <?php foreach ($therapyGroups as $group) : ?>
                 <tr>
-                    <td><a href="<?php echo $GLOBALS['rootdir'] . '/therapy_groups/index.php?method=groupDetails&group_id=' . attr($group['group_id']); ?>"><?php echo text($group['group_name']);?></a></td>
+                    <td><a href="<?php echo $GLOBALS['rootdir'] . '/therapy_groups/index.php?method=groupDetails&group_id=' . attr_url($group['group_id']); ?>"><?php echo text($group['group_name']);?></a></td>
                     <td><?php echo text($group['group_id']);?></td>
                     <td><?php echo xlt($group_types[$group['group_type']]);?></td>
                     <td><?php echo xlt($statuses[$group['group_status']]);?></td>
@@ -144,15 +138,15 @@
                     <td><?php echo ($group['group_end_date'] == '0000-00-00' or $group['group_end_date'] == '00-00-0000' or empty($group['group_end_date'])) ? '' : text(oeFormatShortDate($group['group_end_date'])); ?></td>
                     <td>
                         <?php foreach ($group['counselors'] as $counselor) {
-                            echo text($counselor) . " </br> ";
-} ;?>
+                            echo text($counselor) . " <br /> ";
+                        } ;?>
                     </td>
                     <td><?php echo text($group['group_notes']);?></td>
                     <td class="delete_btn">
                         <?php
                         //Enable deletion only for groups that weren't yet deleted.
                         if ($group['group_status'] == 10) { ?>
-                            <a href="<?php echo $GLOBALS['rootdir'] . '/therapy_groups/index.php?method=listGroups&deleteGroup=1&group_id=' . attr($group['group_id']); ?>"><?php
+                            <a href="<?php echo $GLOBALS['rootdir'] . '/therapy_groups/index.php?method=listGroups&deleteGroup=1&group_id=' . attr_url($group['group_id']); ?>"><?php
                             if ($edit) { ?>
                                 <button>X</button><?php
                             } ?>
@@ -173,7 +167,7 @@
 
 
     /* ========= Initialise Data Table & Filters ========= */
-    $(document).ready(function() {
+    $(function () {
 
 //        var lang = '<?php //echo $lang ?>//';//get language support for filters
 
@@ -193,24 +187,24 @@
             },
             ordering: false,
             <?php // Bring in the translations ?>
-            <?php $translationsDatatablesOverride = array('lengthMenu'=>(xla('Display').' _MENU_  '.xla('records per page')),
-                                                          'zeroRecords'=>(xla('Nothing found - sorry')),
-                                                          'info'=>(xla('Showing page') .' _PAGE_ '. xla('of') . ' _PAGES_'),
-                                                          'infoEmpty'=>(xla('No records available')),
-                                                          'infoFiltered'=>('('.xla('filtered from').' _MAX_ '.xla('total records').')'),
-                                                          'infoPostFix'=>(''),
-                                                          'url'=>('')); ?>
+            <?php $translationsDatatablesOverride = array('lengthMenu' => (xla('Display') . ' _MENU_  ' . xla('records per page')),
+                                                          'zeroRecords' => (xla('Nothing found - sorry')),
+                                                          'info' => (xla('Showing page') . ' _PAGE_ ' . xla('of') . ' _PAGES_'),
+                                                          'infoEmpty' => (xla('No records available')),
+                                                          'infoFiltered' => ('(' . xla('filtered from') . ' _MAX_ ' . xla('total records') . ')'),
+                                                          'infoPostFix' => (''),
+                                                          'url' => ('')); ?>
             <?php require($GLOBALS['srcdir'] . '/js/xl/datatables-net.js.php'); ?>
         });
 
         /* Hide/Show filters */
-        $("#show_filters").click(function () {
+        $("#show_filters").on("click", function () {
             $('#filters').show();
             $("#hide_filters").show();
             $("#show_filters").hide();
 
         });
-        $("#hide_filters").click(function () {
+        $("#hide_filters").on("click", function () {
             $('#filters').hide();
             $("#hide_filters").hide();
             $("#show_filters").show();
@@ -225,38 +219,38 @@
 
 
         /* ---- Datetimepickers ---- */
-        $('#group_from_start_date_filter').change( function() {
+        $('#group_from_start_date_filter').on("change", function() {
             table.draw();
         } );
-        $('#group_to_start_date_filter').change( function() {
+        $('#group_to_start_date_filter').on("change", function() {
             table.draw();
         } );
 
-        $('#group_from_end_date_filter').change( function() {
+        $('#group_from_end_date_filter').on("change", function() {
             table.draw();
         } );
-        $('#group_to_end_date_filter').change( function() {
+        $('#group_to_end_date_filter').on("change", function() {
             table.draw();
         } );
 
         /* --- Text inputs --- */
-        $('#group_name_filter').keyup( function() {
+        $('#group_name_filter').on("keyup", function() {
             table.draw();
         } );
-        $('#group_id_filter').keyup( function() {
+        $('#group_id_filter').on("keyup", function() {
             table.draw();
         } );
 
         /* ---- Select Boxes ---- */
-        $('#group_type_filter').change(function () {
+        $('#group_type_filter').on("change", function () {
             table.columns( 2 ).search( this.value ).draw();
         } );
 
-        $('#group_status_filter').change( function() {
+        $('#group_status_filter').on("change", function() {
             table.draw();
         } );
 
-        $('#counselors_filter').change( function() {
+        $('#counselors_filter').on("change", function() {
             table.columns( 6 ).search( this.value ).draw();
         } );
 
@@ -264,7 +258,7 @@
 
 
         /* --------- Reset Filters ------ */
-        $('#clear_filters').click(function(){
+        $('#clear_filters').on("click", function(){
             top.restoreSession();
             location.reload();
         });
@@ -423,9 +417,8 @@
 
 </script>
 
-<?php require  'footer.php'; ?>
+    <?php require  'footer.php'; ?>
 <?php else :?>
-
     <div class="container">
 
         <div class="row alert alert-info">

@@ -1,4 +1,5 @@
 <?php
+
 /* +-----------------------------------------------------------------------------+
  * Copyright 2016 matrix israel
  * LICENSE: This program is free software; you can redistribute it and/or
@@ -18,11 +19,7 @@
  */
 namespace Multipledb;
 
-use Multipledb\Model\Multipledb;
-use Multipledb\Model\MultipledbTable;
-use Zend\Db\ResultSet\ResultSet;
-use Zend\Db\TableGateway\TableGateway;
-use Zend\ModuleManager\ModuleManager;
+use Laminas\ModuleManager\ModuleManager;
 
 class Module
 {
@@ -31,10 +28,10 @@ class Module
     public function getAutoloaderConfig()
     {
         return array(
-            'Zend\Loader\ClassMapAutoloader' => array(
+            'Laminas\Loader\ClassMapAutoloader' => array(
                 __DIR__ . '/autoload_classmap.php',
             ),
-            'Zend\Loader\StandardAutoloader' => array(
+            'Laminas\Loader\StandardAutoloader' => array(
                 'namespaces' => array(
                     __NAMESPACE__ => __DIR__ . '/src/' . __NAMESPACE__,
 
@@ -48,30 +45,6 @@ class Module
         return include __DIR__ . '/config/module.config.php';
     }
 
-
-    /**
-     * @return array
-     */
-    public function getServiceConfig()
-    {
-        return array(
-            'factories' => array(
-                'Multipledb\Model\MultipledbTable' =>  function ($sm) {
-                    $tableGateway = $sm->get('MultipledbTableGateway');
-                    $table = new MultipledbTable($tableGateway);
-                    return $table;
-                },
-                'MultipledbTableGateway' => function ($sm) {
-                    $dbAdapter = $sm->get('Zend\Db\Adapter\Adapter');
-                    $resultSetPrototype = new ResultSet();
-                    $resultSetPrototype->setArrayObjectPrototype(new Multipledb());
-                    return new TableGateway('multiple_db', $dbAdapter, null, $resultSetPrototype);
-                },
-            ),
-        );
-    }
-
-
     /**
      * load global variables foe every controllers
      * @param ModuleManager $manager
@@ -84,6 +57,7 @@ class Module
         $sharedEvents->attach(__NAMESPACE__, 'dispatch', function ($e) {
             $controller = $e->getTarget();
             //$controller->layout()->setVariable('status', null);
+            // @see https://framework.zend.com/apidoc/2.0/classes/Laminas.Mvc.Controller.Plugin.Layout.html
             $controller->layout('multipledb/layout/layout');
 
 

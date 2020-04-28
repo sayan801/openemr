@@ -3,24 +3,11 @@
  *
  * application logic specific to the Patient profile page
  *
- * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- *
- * LICENSE: This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package OpenEMR
- * @author Jerry Padgett <sjpadgett@gmail.com>
- * @link http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 var page = {
 	patientData: new model.PatientCollection(),
@@ -102,7 +89,7 @@ var page = {
 		this.modelView.templateEl = $("#patientModelTemplate");
 
 		this.modelView.on('rendered',function(){ // model rendered
-			$(function (){
+			$(function () {
 				$('.jquery-date-picker').datetimepicker({
 					i18n:{
 				        en: {
@@ -152,7 +139,7 @@ var page = {
 								page.patient.get('refProviderid') == item.get( 'id')
 						));/**/
 					});
-					
+
 				if( page.portalpatient.get('pid') ){
 					$("#replaceAllButton").show();
 					page.isEdited = true;
@@ -172,7 +159,7 @@ var page = {
 								value = 'Unassigned';
 							//$('#'+key+'InputContainer span.help-inline').addClass('editval');
 							$('#'+key+'InputContainer span.help-inline').html(
-									'<a class="editval" style="color:blue" onclick="page.toggleVal(this); return false;" data-tstate=new data-id="'+key+'">'+value+'</a>');
+									'<a class="editval text-primary" onclick="page.toggleVal(this); return false;" data-tstate=new data-id="'+key+'">'+value+'</a>');
 							$('#'+key+'InputContainer span.help-inline').show();
 						}
 					});
@@ -190,7 +177,7 @@ var page = {
 
 			$(".controls .inline-inputs").find(':input:checked').parent('.btn').addClass('active');
 
-			$(function (){
+			$(function () {
 				$('.jquery-date-time-picker').datetimepicker({
 					i18n:{
 				        en: {
@@ -232,33 +219,33 @@ var page = {
 	replaceVal:function( el ){
 		var a = $(el).data('id');
 		if( !document.getElementById(a) ){
-			$('input[name='+a+'][value="' +  _.escape(page.portalpatient.get(a)) + '"'+']').prop('checked', true).closest('label').css({"color":"blue"});
+			$('input[name='+a+'][value="' +  _.escape(page.portalpatient.get(a)) + '"'+']').prop('checked', true).closest('label').css({"class":"text-primary"});
 		}
 		else{
 				$('#'+a).prop('value', page.portalpatient.get(a))
-				$('#'+a).css({"color":"blue","font-weight":"normal"});
+				$('#'+a).css({"class":"text-primary","font-weight":"normal"});
 			}
 		var v = _.escape(page.patient.get(a));
 		if( ( $("input[name="+a+"]").attr('type') == 'radio' || $('#'+a).is('select') ) && v == "" )
 			v = 'Unassigned';
 		$('#'+a+'InputContainer span.help-inline').html('');
-		$('#'+a+'InputContainer span.help-inline').html( '<a class="editval" style="color:red;font-size:16px" onclick="page.revertVal(this); return false;" data-tstate=chart data-id="'+a+'">'+v+'</a>');
+		$('#'+a+'InputContainer span.help-inline').html( '<a class="editval text-danger" style="font-size: 16px" onclick="page.revertVal(this); return false;" data-tstate=chart data-id="'+a+'">'+v+'</a>');
 		$('#'+a+'InputContainer span.help-inline').show();
 	},
 	revertVal:function( el ){
 		var a = $(el).data('id');
 		if( !document.getElementById(a) ){
-			$('input[name='+a+'][value="' +  _.escape(page.patient.get(a)) + '"'+']').prop('checked', true).closest('label').css({"color":"red"});
+			$('input[name='+a+'][value="' +  _.escape(page.patient.get(a)) + '"'+']').prop('checked', true).closest('label').css({"class":"text-danger"});
 		}
 		else{
 				$('#'+a).prop('value', page.patient.get(a))
-				$('#'+a).css({"color":"red","font-weight":"normal"});
+				$('#'+a).css({"class":"text-danger","font-weight":"normal"});
 			}
 		var v = _.escape(page.portalpatient.get(a));
 		if( ( $("input[name="+a+"]").attr('type') == 'radio' || $('#'+a).is('select') ) && v == "" )
 			v = 'Unassigned';
 		$('#'+a+'InputContainer span.help-inline').html('');
-		$('#'+a+'InputContainer span.help-inline').html( '<a class="editval" style="color:blue;font-size:16px" onclick="page.replaceVal(this); return false;" data-tstate=new data-id="'+a+'">'+v+'</a>');
+		$('#'+a+'InputContainer span.help-inline').html( '<a class="editval text-primary" style="font-size: 16px" onclick="page.replaceVal(this); return false;" data-tstate="new" data-id="'+a+'">'+v+'</a>');
 		$('#'+a+'InputContainer span.help-inline').show();
 		if( !$("#donePatientButton").is(":visible") ){
 			$("#donePatientButton").show();
@@ -472,7 +459,7 @@ page.patient.save({
 					//alert('Save Success')
 				}
 				else {
-					eModal.close(true)
+                    window.dlgCloseAjax();
 				}
 				app.hideProgress('modelLoader');
 				if (isNew) {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * library/log_validation.php to validate audit logs tamper resistance.
  *
@@ -20,16 +21,17 @@
  * @link    https://www.open-emr.org
  */
 
-
 require_once("../interface/globals.php");
-require_once("$srcdir/acl.inc");
 
-if (!acl_check('admin', 'users')) {
+use OpenEMR\Common\Acl\AclMain;
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!AclMain::aclCheckCore('admin', 'users')) {
     die(xlt("Not Authorized"));
 }
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $valid  = true;
@@ -41,7 +43,7 @@ while ($row = sqlFetchArray($sql)) {
     if (empty($logEntry)) {
         $valid = false;
         array_push($errors, xl("Following audit log entry number is missing") . ": " . $row['log_id']);
-    } else if ($row['log_checksum'] != $logEntry['checksum']) {
+    } elseif ($row['log_checksum'] != $logEntry['checksum']) {
         $valid = false;
         array_push($errors, xl("Audit log tampering evident at entry number") . " " . $row['log_id']);
     }
@@ -61,6 +63,6 @@ function catch_logs()
 {
     $sql = sqlStatement("select * from log where id not in(select log_id from log_validator) and checksum is NOT null and checksum != ''");
     while ($row = sqlFetchArray($sql)) {
-        sqlInsert("INSERT into log_validator (log_id,log_checksum) VALUES(?,?)", array($row['id'],$row['checksum']));
+        sqlStatement("INSERT into log_validator (log_id,log_checksum) VALUES(?,?)", array($row['id'],$row['checksum']));
     }
 }

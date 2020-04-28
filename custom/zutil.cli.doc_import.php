@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Command-line / Unattended document import utility.
  *
@@ -33,7 +34,7 @@
  */
 
 // Allow this script to be run as a cronjob
-require_once(dirname(__FILE__, 2)."/library/allow_cronjobs.php");
+require_once(dirname(__FILE__, 2) . "/library/allow_cronjobs.php");
 
 // Defaults
 $arg = array(
@@ -51,7 +52,7 @@ foreach ($arg as $key => $def) {
     }
 }
 
-require_once(dirname(__FILE__, 2)."/interface/globals.php");
+require_once(dirname(__FILE__, 2) . "/interface/globals.php");
 require_once("$srcdir/documents.php");
 
 if (isset($GLOBALS[$arg['path']])) {
@@ -102,7 +103,7 @@ foreach ($docs as $doc) {
     }
 
     $doc_pathname = $doc->getPathname();
-    $doc_url = "file://".$doc_pathname;
+    $doc_url = "file://" . $doc_pathname;
 
     $finfo = finfo_open();
     $str_mime = finfo_file($finfo, $doc_pathname, FILEINFO_MIME_TYPE);
@@ -134,7 +135,7 @@ foreach ($docs as $doc) {
         $objDoc->populate();
         // mdsupport - Need set_category method for the Document
         if (is_numeric($objDoc->get_id())) {
-            sqlInsert("INSERT INTO categories_to_documents(category_id, document_id) VALUES(?,?)", array($arg['category'], $objDoc->get_id()));
+            sqlStatement("INSERT INTO categories_to_documents(category_id, document_id) VALUES(?,?)", array($arg['category'], $objDoc->get_id()));
         }
         printf('%s - %s%s', text($doc_pathname), (is_numeric($objDoc->get_id()) ? text($objDoc->get_url()) : xlt('Documents setup error')), "\n");
     } else {

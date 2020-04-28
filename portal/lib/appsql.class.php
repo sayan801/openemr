@@ -1,33 +1,18 @@
 <?php
-/**
- *
- * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- *
- * LICENSE: This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package OpenEMR
- * @author Jerry Padgett <sjpadgett@gmail.com>
- * @link http://www.open-emr.org
- */
-// namespace OnsitePortal;
-/**
- *
- * @param
- *            wrapper class for moving some care coordination zend product
- */
-require_once(dirname(__FILE__) . '/../../library/sql.inc');
 
+/**
+ * Patient Portal
+ *
+ * @package   OpenEMR
+ * @link      http://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2016-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
+
+require_once(dirname(__FILE__) . '/../../interface/globals.php');
+
+use OpenEMR\Common\Crypto\CryptoGen;
 use OpenEMR\Common\Logging\EventAuditLogger;
 
 class ApplicationTable
@@ -102,7 +87,7 @@ class ApplicationTable
                     $action
             );
         try {
-            $sql = "Select * From onsite_portal_activity As pa Where  pa.patient_id = ? And  pa.activity = ? And  pa.require_audit = ? ".
+            $sql = "Select * From onsite_portal_activity As pa Where  pa.patient_id = ? And  pa.activity = ? And  pa.require_audit = ? " .
                                     "And pa.status = ? And  pa.pending_action = ? ORDER BY pa.date ASC LIMIT 1";
             $return = sqlStatementNoLog($sql, $audit);
             $result = true;
@@ -153,11 +138,14 @@ class ApplicationTable
      *         $audit['action_taken_time']="";
      *         $audit['checksum']="";
      */
-    public function portalAudit($type = 'insert', $rec = '', array $auditvals, $oelog = true, $error = true)
+    public function portalAudit(string $type = null, string $rec = null, array $auditvals, $oelog = true, $error = true)
     {
         $return = false;
         $result = false;
         $audit = array ();
+        if (!$type) {
+            $type = 'insert';
+        }
         if ($type != 'insert') {
             $audit['date'] = $auditvals['date'] ? $auditvals['date'] : date("Y-m-d H:i:s");
         }
@@ -182,13 +170,13 @@ class ApplicationTable
 
         try {
             if ($type != 'update') {
-                $logsql = "INSERT INTO onsite_portal_activity".
-                        "( date, patient_id, activity, require_audit, pending_action, action_taken, status, narrative,".
-                            "table_action, table_args, action_user, action_taken_time, checksum) ".
+                $logsql = "INSERT INTO onsite_portal_activity" .
+                        "( date, patient_id, activity, require_audit, pending_action, action_taken, status, narrative," .
+                            "table_action, table_args, action_user, action_taken_time, checksum) " .
                                 "VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             } else {
-                $logsql = "update onsite_portal_activity set date=?, patient_id=?, activity=?, require_audit=?,".
-                        "            pending_action=?, action_taken=?,status=?, narrative=?, table_action=?, table_args=?,".
+                $logsql = "update onsite_portal_activity set date=?, patient_id=?, activity=?, require_audit=?," .
+                        "            pending_action=?, action_taken=?,status=?, narrative=?, table_action=?, table_args=?," .
                                         "action_user=?, action_taken_time=?, checksum=? ";
                 $logsql .= "where id='" . add_escape_custom($rec) . "' And patient_id='" . add_escape_custom($audit['patient_id']) . "'";
             }
@@ -294,7 +282,7 @@ class ApplicationTable
          */
         $logMsg .= "\n SQL statement : $sql" . $processedBinds;
         $logMsg .= "\n $trace";
-        error_log("ERROR: " . $logMsg, 0);
+        error_log("ERROR: " . htmlspecialchars($logMsg, ENT_QUOTES), 0);
     }
     public function escapeHtml($string)
     {
@@ -310,9 +298,9 @@ class ApplicationTable
     {
         if ($format == "0") {
             $date_format = 'yyyy/mm/dd';
-        } else if ($format == 1) {
+        } elseif ($format == 1) {
             $date_format = 'mm/dd/yyyy';
-        } else if ($format == 2) {
+        } elseif ($format == 2) {
             $date_format = 'dd/mm/yyyy';
         } else {
             $date_format = $format;
@@ -383,7 +371,8 @@ class ApplicationTable
         $encrypt_comment = 'No';
         if (! empty($comments)) {
             if ($GLOBALS["enable_auditlog_encryption"]) {
-                $comments = encryptStandard($comments);
+                $cryptoGen = new CryptoGen();
+                $comments = $cryptoGen->encryptStandard($comments);
                 $encrypt_comment = 'Yes';
             }
         }
@@ -391,7 +380,7 @@ class ApplicationTable
         $sql = "insert into log ( date, event, user, groupname, success, comments, log_from, crt_user, patient_id, user_notes) " . "values ( NOW(), " . $adodb->qstr($event) . "," .
             $adodb->qstr($user) . "," . $adodb->qstr($groupname) . "," . $adodb->qstr($success) . "," .
             $adodb->qstr($comments) . "," . $adodb->qstr($log_from) . "," . $adodb->qstr($crt_user) . "," .
-            $adodb->qstr($patient_id) . "," . $adodb->qstr($user_notes) .")";
+            $adodb->qstr($patient_id) . "," . $adodb->qstr($user_notes) . ")";
 
         $ret = sqlInsertClean_audit($sql);
 
@@ -403,6 +392,6 @@ class ApplicationTable
             $patient_id = 0;
         }
 
-        EventAuditLogger::instance()->send_atna_audit_msg($user, $groupname, $event, $patient_id, $success, $comments);
+        EventAuditLogger::instance()->sendAtnaAuditMsg($user, $groupname, $event, $patient_id, $success, $comments);
     }
 }// app query class

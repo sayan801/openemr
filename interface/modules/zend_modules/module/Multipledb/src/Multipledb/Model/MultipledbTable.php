@@ -20,11 +20,12 @@
 
 namespace Multipledb\Model;
 
-use Zend\Db\Sql\Expression;
-use Zend\Db\TableGateway\TableGateway;
-use Zend\Db\Sql\Predicate;
-use \Application\Model\ApplicationTable;
-use Zend\Db\Adapter\Adapter;
+use OpenEMR\Common\Crypto\CryptoGen;
+use Laminas\Db\Sql\Expression;
+use Laminas\Db\TableGateway\TableGateway;
+use Laminas\Db\Sql\Predicate;
+use Application\Model\ApplicationTable;
+use Laminas\Db\Adapter\Adapter;
 
 class MultipledbTable
 {
@@ -40,7 +41,7 @@ class MultipledbTable
     public function __construct(TableGateway $tableGateway)
     {
         $this->tableGateway = $tableGateway;
-        $adapter = \Zend\Db\TableGateway\Feature\GlobalAdapterFeature::getStaticAdapter();
+        $adapter = \Laminas\Db\TableGateway\Feature\GlobalAdapterFeature::getStaticAdapter();
         $this->adapter = $adapter;
     }
 
@@ -74,7 +75,8 @@ class MultipledbTable
     {
 
         if ($db['password']) {
-            $db['password'] = encryptStandard($db['password']);
+            $cryptoGen = new CryptoGen();
+            $db['password'] = $cryptoGen->encryptStandard($db['password']);
         } else {
             unset($db['password']);
         }

@@ -1,12 +1,15 @@
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
+// as published by the Free Software Foundation; either version 3
 // of the License, or (at your option) any later version.
+// modified to use activeElement for general edit sjpadgett@gmail.com 06/18/2019
+//
+
 function moveOptions_11(theSelFrom, theSelTo){
     document.getElementById(theSelFrom).style.color="red";
     document.getElementById(theSelFrom).style.fontStyle="italic";
     var str=document.getElementById(theSelFrom).innerHTML;
-    if(window.frames[0].document.body.innerHTML=='<br>')
+    if(window.frames[0].document.body.innerHTML=='<br />')
     window.frames[0].document.body.innerHTML="";
     var patt=/\?\?/;
     var result=patt.test(str);
@@ -29,8 +32,22 @@ function movePD(val,theSelTo){
     textAreaContent += textFrom;
     window.frames[0].document.body.innerHTML=textAreaContent;
 }
-function edit(id){
-    val=window.opener.document.getElementById(id).value;
+function edit(id, ccFlag = ''){
+    let val = '';
+    if (ccFlag) {
+        if(ccFlag === 'id') {
+            val = window.opener.document.getElementById(id).value;
+        } else {
+            // must be name attr.
+            val = window.opener.document.querySelector('textarea[name='+id+']').value;
+            if(val === null) {
+                val = window.opener.document.querySelector("input[name="+id+"]").value;
+            }
+        }
+    } else {
+        val = window.opener.document.getElementById(id).value;
+    }
+
     arr=val.split("|*|*|*|");
     document.getElementById('textarea1').value=arr[0];
 }
@@ -72,17 +89,30 @@ function ascii_write(asc, theSelTo){
         }
     }
 }
-function SelectToSave(textara){
-    var textAreaContent = window.frames[0].document.body.innerHTML;
-    mainform=window.opener.document;
-    if(mainform.getElementById(textara+'_div'))
-    mainform.getElementById(textara+'_div').innerHTML = textAreaContent;
-    if(mainform.getElementById(textara+'_optionTD') && document.getElementById('options'))
-    mainform.getElementById(textara+'_optionTD').innerHTML =document.getElementById('options').innerHTML;
-    if(mainform.getElementById(textara)){
-    mainform.getElementById(textara).value = textAreaContent;
-    if(document.getElementById('options'))
-    mainform.getElementById(textara).value +="|*|*|*|"+document.getElementById('options').innerHTML;
+function SelectToSave(textara, ccFlag = '') {
+    let textAreaContent = '';
+    mainform = window.opener.document;
+    if (ccFlag) {
+        textAreaContent = window.frames[0].document.body.textContent;
+        if(ccFlag === 'id') {
+            val = mainform.getElementById(textara).value = textAreaContent;
+        } else {
+            val = mainform.querySelector('textarea[name='+textara+']').value = textAreaContent;
+            if(val === null) {
+                val = mainform.querySelector("input[name="+textara+"]").value = textAreaContent;
+            }
+        }
+    } else {
+        textAreaContent = window.frames[0].document.body.innerHTML;
+        if (mainform.getElementById(textara + '_div'))
+            mainform.getElementById(textara + '_div').innerHTML = textAreaContent;
+        if (mainform.getElementById(textara + '_optionTD') && document.getElementById('options'))
+            mainform.getElementById(textara + '_optionTD').innerHTML = document.getElementById('options').innerHTML;
+        if (mainform.getElementById(textara)) {
+            mainform.getElementById(textara).value = textAreaContent;
+            if (document.getElementById('options'))
+                mainform.getElementById(textara).value += "|*|*|*|" + document.getElementById('options').innerHTML;
+        }
     }
     dlgclose();
 }
@@ -112,7 +142,19 @@ function TemplateSentence(val){
     },
     success: function(thedata){
                 //alert(thedata)
-                document.getElementById('template_sentence').innerHTML = thedata;
+                let tempEl = document.createElement( 'div' ),finalEl='';
+                tempEl.innerHTML = thedata;
+                for (let i=0; i< tempEl.children.length; i++) {
+                    let ele = tempEl.children[i],temp;
+                    if(ele.id){
+                        ele.classList.add("draggable")
+                        temp = document.createElement( 'div' )
+                        temp.classList.add("droppable");
+                        temp.appendChild(ele.cloneNode(true));
+                        finalEl += temp.outerHTML;
+                    }
+                }
+                document.getElementById('template_sentence').innerHTML = finalEl;
                 },
     error:function(){
         //alert("fail");

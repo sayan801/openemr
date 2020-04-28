@@ -1,26 +1,13 @@
 <?php
-/** @package    Openemr::Reporter */
 
 /**
+ * UserReporter.php
  *
- * Copyright (C) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
- *
- * LICENSE: This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Affero General Public License as
- *  published by the Free Software Foundation, either version 3 of the
- *  License, or (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Affero General Public License for more details.
- *
- *  You should have received a copy of the GNU Affero General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package OpenEMR
- * @author Jerry Padgett <sjpadgett@gmail.com>
- * @link http://www.open-emr.org
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2016-2017 Jerry Padgett <sjpadgett@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 /** import supporting libraries */
@@ -102,13 +89,13 @@ class UserReporter extends Reporter
     public $PhysicianType;
 
     /*
-	* GetCustomQuery returns a fully formed SQL statement.  The result columns
-	* must match with the properties of this reporter object.
-	*
-	* @see Reporter::GetCustomQuery
-	* @param Criteria $criteria
-	* @return string SQL statement
-	*/
+    * GetCustomQuery returns a fully formed SQL statement.  The result columns
+    * must match with the properties of this reporter object.
+    *
+    * @see Reporter::GetCustomQuery
+    * @param Criteria $criteria
+    * @return string SQL statement
+    */
     static function GetCustomQuery($criteria)
     {
         $sql = "select
@@ -159,9 +146,6 @@ class UserReporter extends Reporter
 			,`users`.`taxonomy` as Taxonomy
 			,`users`.`calendar` as Calendar
 			,`users`.`abook_type` as AbookType
-			,`users`.`pwd_expiration_date` as PwdExpirationDate
-			,`users`.`pwd_history1` as PwdHistory1
-			,`users`.`pwd_history2` as PwdHistory2
 			,`users`.`default_warehouse` as DefaultWarehouse
 			,`users`.`irnpool` as Irnpool
 			,`users`.`state_license_number` as StateLicenseNumber
@@ -179,14 +163,14 @@ class UserReporter extends Reporter
     }
 
     /*
-	* GetCustomCountQuery returns a fully formed SQL statement that will count
-	* the results.  This query must return the correct number of results that
-	* GetCustomQuery would, given the same criteria
-	*
-	* @see Reporter::GetCustomCountQuery
-	* @param Criteria $criteria
-	* @return string SQL statement
-	*/
+    * GetCustomCountQuery returns a fully formed SQL statement that will count
+    * the results.  This query must return the correct number of results that
+    * GetCustomQuery would, given the same criteria
+    *
+    * @see Reporter::GetCustomCountQuery
+    * @param Criteria $criteria
+    * @return string SQL statement
+    */
     static function GetCustomCountQuery($criteria)
     {
         $sql = "select count(1) as counter from `users`";

@@ -1,28 +1,19 @@
 <?php
-/* +-----------------------------------------------------------------------------+
-*    OpenEMR - Open Source Electronic Medical Record
-*    Copyright (C) 2014 Z&H Consultancy Services Private Limited <sam@zhservices.com>
-*
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU Affero General Public License as
-*    published by the Free Software Foundation, either version 3 of the
-*    License, or (at your option) any later version.
-*
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU Affero General Public License for more details.
-*
-*    You should have received a copy of the GNU Affero General Public License
-*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*    @author  BASIL PT <basil@zhservices.com>
-* +------------------------------------------------------------------------------+
-*/
+
+/**
+ * interface/modules/zend_modules/module/Application/src/Application/Controller/SendtoController.php
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    BASIL PT <basil@zhservices.com>
+ * @copyright Copyright (c) 2014 Z&H Consultancy Services Private Limited <sam@zhservices.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 namespace Application\Controller;
 
-use Zend\Mvc\Controller\AbstractActionController;
-use Zend\View\Model\ViewModel;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
 use Application\Listener\Listener;
 
 class SendtoController extends AbstractActionController
@@ -30,12 +21,14 @@ class SendtoController extends AbstractActionController
     protected $sendtoTable;
     protected $applicationTable;
     protected $listenerObject;
-    
-    public function __construct()
+
+    public function __construct(\Application\Model\ApplicationTable $applicationTable, \Application\Model\SendtoTable $sendToTable)
     {
-        $this->listenerObject   = new Listener;
+        $this->listenerObject   = new Listener();
+        $this->applicationTable = $applicationTable;
+        $this->sendtoTable = $sendToTable;
     }
-    
+
     /*
     * Display the content of Send To button
     */
@@ -59,16 +52,17 @@ class SendtoController extends AbstractActionController
                                 'selected_form'       => $selected_cform,
                                 'listenerObject'      => $this->listenerObject,
                                 'ccda_components'     => $ccda_components,
+                                'download_format'     => [] // empty array, can be populated by SendToHieHelper...
                             ));
         if ($button_only == 1) {
             $this->layout('layout/embedded_button');
         }
-        
+
         return $view;
     }
-    
+
     /*
-    * 
+    *
     */
     public function ajaxAction()
     {
@@ -82,8 +76,8 @@ class SendtoController extends AbstractActionController
                 echo $components;
                 break;
             case 'send_fax':
-                $x=ob_get_level();
-                for (; $x>0; $x--) {
+                $x = ob_get_level();
+                for (; $x > 0; $x--) {
                     ob_end_clean();
                 }
 
@@ -100,13 +94,13 @@ class SendtoController extends AbstractActionController
                 $req_list   = $this->getRequest()->getPost('req_list', null);
                 if ($req_list == "facility") {
                     $facility = $this->getSendtoTable()->getFacility();
-                    echo "<option value=''>-".$this->listenerObject->z_xlt("Select")."-</option>";
+                    echo "<option value=''>-" . $this->listenerObject->z_xlt("Select") . "-</option>";
                     foreach ($facility as $fac_query_result) {
-                        echo "<option value='".$this->escapeHtml($fac_query_result['fax'])."' >".$fac_query_result['name']."</option>";
+                        echo "<option value='" . $this->escapeHtml($fac_query_result['fax']) . "' >" . $fac_query_result['name'] . "</option>";
                     }
                 } else {
                     $users = $this->getSendtoTable()->getUsers($req_list);
-                    echo "<option value=''>-".$this->listenerObject->z_xlt("Select")."-</option>";
+                    echo "<option value=''>-" . $this->listenerObject->z_xlt("Select") . "-</option>";
                     foreach ($users as $user) {
                         if ($user['ab_option'] == 3) {
                             $displayName = $user['organization'];
@@ -114,7 +108,7 @@ class SendtoController extends AbstractActionController
                             $displayName = $user['fname'] . ' ' . $user['mname'] . ' ' . $user['lname'];
                         }
 
-                        echo "<option value='".$this->escapeHtml($user['fax'])."' >".$displayName."</option>";
+                        echo "<option value='" . $this->escapeHtml($user['fax']) . "' >" . $displayName . "</option>";
                     }
                 }
                 break;
@@ -122,7 +116,7 @@ class SendtoController extends AbstractActionController
 
         return $this->response;
     }
-    
+
     /**
     * Table Gateway
     *
@@ -130,14 +124,9 @@ class SendtoController extends AbstractActionController
     */
     public function getSendtoTable()
     {
-        if (!$this->sendtoTable) {
-            $sm = $this->getServiceLocator();
-            $this->sendtoTable = $sm->get('Application\Model\SendtoTable');
-        }
-
         return $this->sendtoTable;
     }
-    
+
     /**
     * Table Gateway
     *
@@ -145,11 +134,6 @@ class SendtoController extends AbstractActionController
     */
     public function getApplicationTable()
     {
-        if (!$this->applicationTable) {
-            $sm = $this->getServiceLocator();
-            $this->applicationTable = $sm->get('Application\Model\ApplicationTable');
-        }
-
         return $this->applicationTable;
     }
 }

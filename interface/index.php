@@ -1,4 +1,5 @@
 <?php
+
 /**
  * index.php
  *
@@ -9,15 +10,11 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("./globals.php");
 ?>
 
 <html>
 <head>
-<?php html_header_show();?>
-
-
 </head>
 <body ONLOAD="javascript:top.location.href='<?php echo "$rootdir/login/login.php"; ?>';">
 

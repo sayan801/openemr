@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Returns a count of due messages for current user.
  *
@@ -11,13 +12,14 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../../interface/globals.php");
 require_once("$srcdir/dated_reminder_functions.php");
 require_once("$srcdir/pnotes.inc");
 
-if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 // if portal is enable get various alerts
@@ -33,4 +35,4 @@ $dueReminders = GetDueReminderCount(5, strtotime(date('Y/m/d')));
 $activeMessages = getPnotesByUser("1", "no", $_SESSION['authUser'], true);
 
 $totalNumber = $dueReminders + $activeMessages;
-echo ($totalNumber > 0 ? '('.text(intval($totalNumber)).')' : '');
+echo ($totalNumber > 0 ? '(' . text(intval($totalNumber)) . ')' : '');

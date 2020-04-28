@@ -19,10 +19,10 @@
  * @link    http://www.open-emr.org
  */
 
-
 namespace PrescriptionTemplates\Controller;
 
-use Zend\View\Model\ViewModel;
+use Interop\Container\ContainerInterface;
+use Laminas\View\Model\ViewModel;
 
 /**
  * Class HtmlTemplatesController
@@ -34,7 +34,6 @@ use Zend\View\Model\ViewModel;
  */
 class HtmlTemplatesController extends PrescriptionTemplatesController
 {
-
     public function defaultAction()
     {
         $id = $this->params()->fromQuery('id');

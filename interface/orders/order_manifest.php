@@ -1,31 +1,25 @@
 <?php
+
 /**
-* Script to display a summary of a given procedure order before it has been processed.
-*
-* Copyright (C) 2013, 2016 Rod Roark <rod@sunsetsystems.com>
-*
-* LICENSE: This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://opensource.org/licenses/gpl-license.php>.
-*
-* @package   OpenEMR
-* @author    Rod Roark <rod@sunsetsystems.com>
-*/
-
-
-
+ * Script to display a summary of a given procedure order before it has been processed.
+ *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Rod Roark <rod@sunsetsystems.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
+ * @author    Tyler Wrenn <tyler@tylerwrenn.com>
+ * @copyright Copyright (c) 2013, 2016 Rod Roark <rod@sunsetsystems.com>
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @copyright Copyright (c) 2020 Tyler Wrenn <tyler@tylerwrenn.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ */
 
 require_once("../globals.php");
-require_once("$srcdir/acl.inc");
 require_once("$srcdir/options.inc.php");
 require_once("$srcdir/patient.inc");
+
+use OpenEMR\Common\Acl\AclMain;
+use OpenEMR\Core\Header;
 
 function getListItem($listid, $value)
 {
@@ -129,41 +123,64 @@ function generate_order_summary($orderid)
             $ins_zip   = $tmp->get_zip();
         }
     }
-?>
+    ?>
 
 <style>
 
-.ordsum tr.head   { font-size:10pt; background-color:#cccccc; text-align:center; }
-.ordsum tr.detail { font-size:10pt; }
-.ordsum a, .ordsum a:visited, .ordsum a:hover { color:#0000cc; }
-
-.ordsum table {
- border-style: solid;
- border-width: 1px 0px 0px 1px;
- border-color: black;
+.ordsum tr.head {
+    font-size: 13px;
+    background-color: #cccccc;
+    text-align: center;
+}
+.ordsum tr.detail {
+    font-size: 13px;
+}
+.ordsum a,
+.ordsum a:visited,
+.ordsum a:hover {
+    color: var(--primary);
 }
 
-.ordsum td, .ordsum th {
- border-style: solid;
- border-width: 0px 1px 1px 0px;
- border-color: black;
+.ordsum table {
+    border-style: solid;
+    border-width: 1px 0 0 1px;
+    border-color: var(--black);
+}
+
+.ordsum td,
+.ordsum th {
+    border-style: solid;
+    border-width: 0 1px 1px 0;
+    border-color: var(--black);
 }
 
 /* specifically exclude from printing */
 @media print {
- .unprintable {
-  visibility: hidden;
-  display: none;
- }
+    .ordsum tr.head {
+        font-size: 10pt;
+    }
+    
+    .ordsum tr.detail {
+        font-size: 10pt;
+    }
+    
+    .ordsum table {
+        border-color: black;
+    }
+    
+    .ordsum td,
+    .ordsum th {
+        border-color: black;
+    }
 }
 
 </style>
 
-<form method='post' action='order_manifest.php?orderid=<?php echo $orderid; ?>'>
+<form method='post' action='order_manifest.php?orderid=<?php echo attr_url($orderid); ?>'>
 
 <div class='ordsum'>
 
-<table width='100%' cellpadding='2' cellspacing='0'>
+<table class='w-100' cellpadding='2' cellspacing='0'>
  <tr bgcolor='#cccccc'>
   <td nowrap><?php echo xlt('Patient Name'); ?></td>
   <td><?php echo myCellText($orow['lname'] . ', ' . $orow['fname'] . ' ' . $orow['mname']); ?></td>
@@ -228,7 +245,7 @@ function generate_order_summary($orderid)
 
 &nbsp;<br />
 
-<table width='100%' cellpadding='2' cellspacing='0'>
+<table class='w-100' cellpadding='2' cellspacing='0'>
 
  <tr class='head'>
   <td><?php echo xlt('Omit'); ?></td>
@@ -238,120 +255,120 @@ function generate_order_summary($orderid)
   <td><?php echo xlt('Notes'); ?></td>
  </tr>
 
-<?php
-  $query = "SELECT " .
+    <?php
+    $query = "SELECT " .
     "procedure_order_seq, procedure_code, procedure_name, diagnoses, do_not_send " .
     "FROM procedure_order_code WHERE " .
     "procedure_order_id =  ? ";
-if (!empty($_POST['bn_show_sendable'])) {
-    $query .= "AND do_not_send = 0 ";
-}
+    if (!empty($_POST['bn_show_sendable'])) {
+        $query .= "AND do_not_send = 0 ";
+    }
 
-  $query .= "ORDER BY procedure_order_seq";
-  $res = sqlStatement($query, array($orderid));
+    $query .= "ORDER BY procedure_order_seq";
+    $res = sqlStatement($query, array($orderid));
 
-  $encount = 0;
+    $encount = 0;
 
-while ($row = sqlFetchArray($res)) {
-    $order_seq      = empty($row['procedure_order_seq']) ? 0 : ($row['procedure_order_seq'] + 0);
-    $procedure_code = empty($row['procedure_code'  ]) ? '' : $row['procedure_code'];
-    $procedure_name = empty($row['procedure_name'  ]) ? '' : $row['procedure_name'];
-    $diagnoses      = empty($row['diagnoses'       ]) ? '' : $row['diagnoses'];
+    while ($row = sqlFetchArray($res)) {
+        $order_seq      = empty($row['procedure_order_seq']) ? 0 : ($row['procedure_order_seq'] + 0);
+        $procedure_code = empty($row['procedure_code'  ]) ? '' : $row['procedure_code'];
+        $procedure_name = empty($row['procedure_name'  ]) ? '' : $row['procedure_name'];
+        $diagnoses      = empty($row['diagnoses'       ]) ? '' : $row['diagnoses'];
 
-    // Create a string of HTML representing the procedure answers.
-    // This code cloned from gen_hl7_order.inc.php.
-    // Should maybe refactor it into something like a ProcedureAnswer class.
-    $qres = sqlStatement(
-        "SELECT " .
-        "a.question_code, a.answer, q.fldtype, q.question_text " .
-        "FROM procedure_answers AS a " .
-        "LEFT JOIN procedure_questions AS q ON " .
-        "q.lab_id = ? " .
-        "AND q.procedure_code = ? AND " .
-        "q.question_code = a.question_code " .
-        "WHERE " .
-        "a.procedure_order_id = ? AND " .
-        "a.procedure_order_seq = ? " .
-        "ORDER BY q.seq, a.answer_seq",
-        array($lab_id, $procedure_code, $orderid, $order_seq)
-    );
+        // Create a string of HTML representing the procedure answers.
+        // This code cloned from gen_hl7_order.inc.php.
+        // Should maybe refactor it into something like a ProcedureAnswer class.
+        $qres = sqlStatement(
+            "SELECT " .
+            "a.question_code, a.answer, q.fldtype, q.question_text " .
+            "FROM procedure_answers AS a " .
+            "LEFT JOIN procedure_questions AS q ON " .
+            "q.lab_id = ? " .
+            "AND q.procedure_code = ? AND " .
+            "q.question_code = a.question_code " .
+            "WHERE " .
+            "a.procedure_order_id = ? AND " .
+            "a.procedure_order_seq = ? " .
+            "ORDER BY q.seq, a.answer_seq",
+            array($lab_id, $procedure_code, $orderid, $order_seq)
+        );
 
-    $notes='';
-    while ($qrow = sqlFetchArray($qres)) {
-        // Formatting of these answer values may be lab-specific and we'll figure
-        // out how to deal with that as more labs are supported.
-        $answer = trim($qrow['answer']);
-        $fldtype = $qrow['fldtype'];
-        if ($fldtype == 'G') {
-            $weeks = intval($answer / 7);
-            $days = $answer % 7;
-            $answer = $weeks . 'wks ' . $days . 'days';
+        $notes = '';
+        while ($qrow = sqlFetchArray($qres)) {
+            // Formatting of these answer values may be lab-specific and we'll figure
+            // out how to deal with that as more labs are supported.
+            $answer = trim($qrow['answer']);
+            $fldtype = $qrow['fldtype'];
+            if ($fldtype == 'G') {
+                $weeks = intval($answer / 7);
+                $days = $answer % 7;
+                $answer = $weeks . 'wks ' . $days . 'days';
+            }
+
+            if ($notes) {
+                $notes .= '<br />';
+            }
+
+            $notes .= text($qrow['question_text'] . ': ' . $answer);
         }
 
-        if ($notes) {
-            $notes .= '<br />';
+        if ($notes === '') {
+            $notes = '&nbsp;';
         }
 
-        $notes .= text($qrow['question_text'] . ': ' . $answer);
-    }
+        ++$encount;
+        $bgcolor = "#" . (($encount & 1) ? "ddddff" : "ffdddd");
+        echo " <tr class='detail' bgcolor='$bgcolor'>\n";
+        echo "  <td><input type='checkbox' name='form_omit[" . attr($order_seq) . "]' value='1'";
+        if (!empty($row['do_not_send'])) {
+            echo " checked";
+        }
 
-    if ($notes === '') {
-        $notes = '&nbsp;';
+        echo " /></td>\n";
+        echo "  <td>" . myCellText("$procedure_code") . "</td>\n";
+        echo "  <td>" . myCellText("$procedure_name") . "</td>\n";
+        echo "  <td>" . myCellText("$diagnoses") . "</td>\n";
+        echo "  <td>$notes</td>\n";
+        echo " </tr>\n";
     }
-
-    ++$encount;
-    $bgcolor = "#" . (($encount & 1) ? "ddddff" : "ffdddd");
-    echo " <tr class='detail' bgcolor='$bgcolor'>\n";
-    echo "  <td><input type='checkbox' name='form_omit[$order_seq]' value='1'";
-    if (!empty($row['do_not_send'])) {
-        echo " checked";
-    }
-
-    echo " /></td>\n";
-    echo "  <td>" . myCellText("$procedure_code") . "</td>\n";
-    echo "  <td>" . myCellText("$procedure_name") . "</td>\n";
-    echo "  <td>" . myCellText("$diagnoses") . "</td>\n";
-    echo "  <td>$notes</td>\n";
-    echo " </tr>\n";
-}
-?>
+    ?>
 
 </table>
 </div>
 
-<center>
-<p class='unprintable'>
-<input type='submit' name='bn_save' value='<?php echo xla('Save omission selections'); ?>' />
-&nbsp;
-<input type='submit' name='bn_show_all' value='<?php echo xla('Show all procedures'); ?>' />
-&nbsp;
-<input type='submit' name='bn_show_sendable' value='<?php echo xla('Show only procedures not omitted'); ?>' />
-</p>
-</center>
+<div class='btn-group d-print-none'>
+    <input type='submit' class='btn btn-primary' name='bn_save' value='<?php echo xla('Save omission selections'); ?>' />
+    <input type='submit' class='btn btn-primary' name='bn_show_all' value='<?php echo xla('Show all procedures'); ?>' />
+    <input type='submit' class='btn btn-primary' name='bn_show_sendable' value='<?php echo xla('Show only procedures not omitted'); ?>' />
+</div>
 
 </form>
 
-<?php
+    <?php
 } // end function generate_order_summary
 
 // Check authorization.
-$thisauth = acl_check('patients', 'med');
+$thisauth = AclMain::aclCheckCore('patients', 'med');
 if (!$thisauth) {
-    die(xl('Not authorized'));
+    die(xlt('Not authorized'));
 }
 
 $orderid = intval($_GET['orderid']);
 ?>
 <html>
 <head>
-<?php html_header_show(); ?>
-<link rel="stylesheet" href='<?php echo $css_header; ?>' type='text/css'>
+<?php Header::setupHeader(); ?>
 <title><?php echo xlt('Order Summary'); ?></title>
 <style>
 body {
- margin: 9pt;
- font-family: sans-serif;
- font-size: 1em;
+    margin: 0.75rem;
+    font-family: sans-serif;
+    font-size: 1rem;
+}
+@media print {
+    body {
+        margin: 9pt;
+    }
 }
 </style>
 </head>

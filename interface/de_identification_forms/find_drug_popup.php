@@ -1,4 +1,5 @@
 <?php
+
 /**
  * find_drug_popup.php
  *
@@ -11,10 +12,12 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once("../globals.php");
 require_once("$srcdir/patient.inc");
 require_once("../../custom/code_types.inc.php");
+
+use OpenEMR\Common\Csrf\CsrfUtils;
+use OpenEMR\Core\Header;
 
 $info_msg = "";
 $codetype = $_REQUEST['codetype'];
@@ -22,9 +25,8 @@ $form_code_type = $_POST['form_code_type'];
 ?>
 <html>
 <head>
-<?php html_header_show(); ?>
 <title><?php echo xlt('Drug Finder'); ?></title>
-<link rel="stylesheet" href='<?php echo $css_header ?>' type='text/css'>
+<?php Header::setupHeader(); ?>
 
 <style>
 td { font-size:10pt; }
@@ -114,7 +116,7 @@ function check_search_str()
 </head>
 <body class="body_top">
 <form method='post' name='theform'  action='find_drug_popup.php' onsubmit="return check_search_str();">
-<input type="hidden" name="csrf_token_form" value="<?php echo attr(collectCsrfToken()); ?>" />
+<input type="hidden" name="csrf_token_form" value="<?php echo attr(CsrfUtils::collectCsrfToken()); ?>" />
 <center>
 <input type="hidden" name="search_status" id="search_status" value=1;>
 <table border='0' cellpadding='5' cellspacing='0'>
@@ -145,8 +147,8 @@ function check_search_str()
 <tr>
 <td colspan="4">
 <?php if ($_REQUEST['bn_search']) {
-    if (!verifyCsrfToken($_POST["csrf_token_form"])) {
-        csrfNotVerified();
+    if (!CsrfUtils::verifyCsrfToken($_POST["csrf_token_form"])) {
+        CsrfUtils::csrfNotVerified();
     }
 
     $search_term = $_REQUEST['search_term'];
@@ -154,7 +156,7 @@ function check_search_str()
     $query = "SELECT count(*) as count FROM drugs " .
       "WHERE (drug_id LIKE ? OR " .
       "name LIKE ?) ";
-    $res = sqlStatement($query, array('%'.$search_term.'%', '%'.$search_term.'%'));
+    $res = sqlStatement($query, array('%' . $search_term . '%', '%' . $search_term . '%'));
     if ($row = sqlFetchArray($res)) {
         $no_of_items = $row['count'];
         if ($no_of_items < 1) {
@@ -164,26 +166,26 @@ function check_search_str()
         document.theform.search_term.value=" ";
         document.theform.search_term.focus();
         </script>
-        <?php
+            <?php
         }
 
         $query = "SELECT drug_id, name FROM drugs " .
         "WHERE (drug_id LIKE ? OR " .
         "name LIKE ?) " .
         "ORDER BY drug_id";
-        $res = sqlStatement($query, array('%'.$search_term.'%', '%'.$search_term.'%'));
+        $res = sqlStatement($query, array('%' . $search_term . '%', '%' . $search_term . '%'));
         $row_count = 0;
         while ($row = sqlFetchArray($res)) {
               $row_count = $row_count + 1;
               $itercode = $row['drug_id'];
               $itertext = ucfirst(strtolower(trim($row['name'])));
-                ?>
-               <input type="checkbox" id="chkbox" name ="chkbox" value= "<?php echo attr($itercode) . "-" . attr($itertext); ?>" > <?php echo text($itercode) . "    " . text($itertext) . "</br>";
+            ?>
+               <input type="checkbox" id="chkbox" name ="chkbox" value= "<?php echo attr($itercode) . "-" . attr($itertext); ?>" > <?php echo text($itercode) . "    " . text($itertext) . "<br />";
         }
     }
 
     }
-?>
+    ?>
 </td>
 </tr>
  </table>

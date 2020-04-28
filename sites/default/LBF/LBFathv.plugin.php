@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2010-2011 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -30,12 +31,12 @@ function athvComputeBMI() {
  else {
   bmi = weight / height / height * 703;
   bmi = bmi.toFixed(1);
-  if      (bmi > 42  ) stat = '" . xl('Obesity III') . "';
-  else if (bmi > 34  ) stat = '" . xl('Obesity II') . "';
-  else if (bmi > 30  ) stat = '" . xl('Obesity I') . "';
-  else if (bmi > 27  ) stat = '" . xl('Overweight') . "';
-  else if (bmi > 18.5) stat = '" . xl('Normal') . "';
-  else                 stat = '" . xl('Underweight') . "';
+  if      (bmi > 42  ) stat = " . xlj('Obesity III') . ";
+  else if (bmi > 34  ) stat = " . xlj('Obesity II') . ";
+  else if (bmi > 30  ) stat = " . xlj('Obesity I') . ";
+  else if (bmi > 27  ) stat = " . xlj('Overweight') . ";
+  else if (bmi > 18.5) stat = " . xlj('Normal') . ";
+  else                 stat = " . xlj('Underweight') . ";
  }
  if (f.form_bmi) f.form_bmi.value = bmi;
  if (f.form_bmi_status) f.form_bmi_status.value = stat;

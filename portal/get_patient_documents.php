@@ -1,38 +1,26 @@
 <?php
-/*
+
+/**
  * Download documents from OpenEMR to the patient portal in a zip file(get_patient_documents.php)
  *
  * This program is used to download patient documents in a zip file in the Patient Portal.
  * The original author did not pursue this but I thought it would be a good addition to
  * the patient portal
  *
- * Copyright (C) 2015-2017 Terry Hill <terry@lillysystems.com>
- * Copyright (C) 2012 Giorgos Vasilakos <giorg.vasilakos@gmail.com>
- *
- * LICENSE: This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 3
- * of the License, or (at your option) any later version.
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://opensource.org/licenses/gpl-license.php>;.
- *
- * @package OpenEMR
- * @author Terry Hill <terry@lilysystems.com>
- * @author Giorgos Vasilakos <giorg.vasilakos@gmail.com>
- * @link http://www.open-emr.org
- *
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Giorgos Vasilakos <giorg.vasilakos@gmail.com>
+ * @author    Terry Hill <terry@lilysystems.com>
+ * @author    Stephen Waite <stephen.waite@cmsvt.com>
+ * @copyright Copyright (c) 2012 Giorgos Vasilakos <giorg.vasilakos@gmail.com>
+ * @copyright Copyright (c) 2015-2017 Terry Hill <terry@lillysystems.com>
+ * @copyright Copyright (c) 2019 Stephen Waite <stephen.waite@cmsvt.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
     require_once("verify_session.php");
-    include_once("$srcdir/documents.php");
+    require_once("$srcdir/documents.php");
     require_once($GLOBALS['fileroot'] . "/controllers/C_Document.class.php");
-
-    // TODO: see if this can be removed (test in PHP 5 and 7)... throwing a warning
-    use C_Document;
 
     // get the temporary folder
     $tmp = $GLOBALS['temporary_files_dir'];
@@ -56,14 +44,14 @@ while ($file = sqlFetchArray($fres)) {
     // create the tree of the categories
     $path = "";
     while ($parent = sqlFetchArray($pathres)) {
-        $path .= convert_safe_file_dir_name($parent['name'])."/";
+        $path .= convert_safe_file_dir_name($parent['name']) . "/";
     }
 
-    $path .= convert_safe_file_dir_name($cat['name'])."/";
+    $path .= convert_safe_file_dir_name($cat['name']) . "/";
     // create the folder structure at the temporary dir
-    if (!is_dir($tmp."/".$pid."/".$path)) {
-        if (!mkdir($tmp."/".$pid."/".$path, 0777, true)) {
-            echo xlt("Error creating directory!")."<br />";
+    if (!is_dir($tmp . "/" . $pid . "/" . $path)) {
+        if (!mkdir($tmp . "/" . $pid . "/" . $path, 0777, true)) {
+            echo xlt("Error creating directory!") . "<br />";
         }
     }
 
@@ -75,35 +63,35 @@ while ($file = sqlFetchArray($fres)) {
         $pos = strpos(substr($file['url'], -5), '.');
         // check if has an extension or find it from the mimetype
         if ($pos === false) {
-            $file['url'] = $file['url'].get_extension($file['mimetype']);
+            $file['url'] = $file['url'] . get_extension($file['mimetype']);
         }
 
-        $dest = $tmp."/".$pid."/".$path."/".convert_safe_file_dir_name(basename($file['url']));
+        $dest = $tmp . "/" . $pid . "/" . $path . "/" . convert_safe_file_dir_name(basename($file['url']));
         if (file_exists($dest)) {
             $x = 1;
             do {
-                $dest = $tmp."/".$pid."/".$path."/". $x ."_".convert_safe_file_dir_name(basename($file['url']));
+                $dest = $tmp . "/" . $pid . "/" . $path . "/" . $x . "_" . convert_safe_file_dir_name(basename($file['url']));
                 $x++;
             } while (file_exists($dest));
         }
 
         file_put_contents($dest, $document);
     } else {
-        echo xlt("Can't find file!")."<br />";
+        echo xlt("Can't find file!") . "<br />";
     }
 }
 
     // zip the folder
-    Zip($tmp."/".$pid."/", $tmp."/".$pid.'.zip');
+    Zip($tmp . "/" . $pid . "/", $tmp . "/" . $pid . '.zip');
 
     // serve it to the patient
     header('Content-type: application/zip');
     header('Content-Disposition: attachment; filename="patient_documents.zip"');
-    readfile($tmp."/".$pid.'.zip');
+    readfile($tmp . "/" . $pid . '.zip');
 
     // remove the temporary folders and files
-    recursive_remove_directory($tmp."/".$pid);
-    unlink($tmp."/".$pid.'.zip');
+    recursive_remove_directory($tmp . "/" . $pid);
+    unlink($tmp . "/" . $pid . '.zip');
 
 function recursive_remove_directory($directory, $empty = false)
 {
@@ -117,7 +105,7 @@ function recursive_remove_directory($directory, $empty = false)
         $handle = opendir($directory);
         while (false !== ($item = readdir($handle))) {
             if ($item != '.' && $item != '..') {
-                $path = $directory.'/'.$item;
+                $path = $directory . '/' . $item;
                 if (is_dir($path)) {
                     recursive_remove_directory($path);
                 } else {
@@ -145,7 +133,7 @@ function Zip($source, $destination)
     }
 
     $zip = new ZipArchive();
-    if (!$zip->open($destination, ZIPARCHIVE::CREATE)) {
+    if (!$zip->open($destination, ZipArchive::CREATE)) {
         return false;
     }
 
@@ -153,18 +141,18 @@ function Zip($source, $destination)
     if (is_dir($source) === true) {
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source), RecursiveIteratorIterator::SELF_FIRST);
         foreach ($files as $file) {
-            if ($file == $source."/..") {
+            if ($file == $source . "/..") {
                 continue;
             }
 
             $file = str_replace('\\', '/', realpath($file));
             if (is_dir($file) === true) {
                 $zip->addEmptyDir(str_replace($source . '/', '', $file . '/'));
-            } else if (is_file($file) === true) {
+            } elseif (is_file($file) === true) {
                 $zip->addFromString(str_replace($source . '/', '', $file), file_get_contents($file));
             }
         }
-    } else if (is_file($source) === true) {
+    } elseif (is_file($source) === true) {
         $zip->addFromString(basename($source), file_get_contents($source));
     }
 

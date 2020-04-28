@@ -1,4 +1,7 @@
 <?php
+
+use OpenEMR\Common\Acl\AclMain;
+
 $GLOBALS['form_exit_url'] = "javascript:parent.closeTab(window.name, false)";
 
 function getFormByEncounter(
@@ -31,7 +34,7 @@ function getFormByEncounter(
 
     $res = sqlStatement($sql, $arraySqlBind);
 
-    for ($iter=0; $row=sqlFetchArray($res); $iter++) {
+    for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
         $all[$iter] = $row;
     }
 
@@ -87,8 +90,7 @@ function authorizeForm($id, $authorized = "1")
 
 function getEncounters($pid, $dateStart = '', $dateEnd = '', $encounterRuleType = '')
 {
-
-        $arraySqlBind = array();
+    $arraySqlBind = array();
 
     if ($encounterRuleType) {
         // Only collect certain type of encounters (list_options item from the rule_enc_types list that is mapped via enc_category_map table)
@@ -103,10 +105,10 @@ function getEncounters($pid, $dateStart = '', $dateEnd = '', $encounterRuleType 
     if ($dateStart && $dateEnd) {
         $where .= "form_encounter.pid = ? and form_encounter.date >= ? and form_encounter.date <= ?";
         array_push($arraySqlBind, $pid, $dateStart, $dateEnd);
-    } else if ($dateStart && !$dateEnd) {
+    } elseif ($dateStart && !$dateEnd) {
         $where .= "form_encounter.pid = ? and form_encounter.date >= ?";
         array_push($arraySqlBind, $pid, $dateStart);
-    } else if (!$dateStart && $dateEnd) {
+    } elseif (!$dateStart && $dateEnd) {
         $where .= "form_encounter.pid = ? and form_encounter.date <= ?";
         array_push($arraySqlBind, $pid, $dateEnd);
     } else {
@@ -114,13 +116,14 @@ function getEncounters($pid, $dateStart = '', $dateEnd = '', $encounterRuleType 
         array_push($arraySqlBind, $pid);
     }
 
-        $res = sqlStatement("SELECT distinct encounter FROM " . escape_table_name($from) . " WHERE $where ORDER by date desc;", $arraySqlBind);
+    //Not table escaping $from since this is hard-coded above and can include more than just a table name
+    $res = sqlStatement("SELECT distinct encounter FROM " . $from . " WHERE " . $where . " ORDER by date desc", $arraySqlBind);
 
-    for ($iter=0; $row=sqlFetchArray($res); $iter++) {
+    for ($iter = 0; $row = sqlFetchArray($res); $iter++) {
         $all[$iter] = $row;
     }
 
-        return $all;
+    return $all;
 }
 
 function getEncounterDateByEncounter($encounter)
@@ -174,4 +177,12 @@ function getDocumentsByEncounter($patientID = null, $encounterID = null)
     }
 
     return $allDocuments;
+}
+
+function hasFormPermission($formDir)
+{
+    // get the aco spec from registry table
+    $formRow = sqlQuery("SELECT aco_spec FROM registry WHERE directory = ?", array($formDir));
+    $permission = explode('|', $formRow['aco_spec']);
+    return AclMain::aclCheckCore($permission[0], $permission[1]);
 }

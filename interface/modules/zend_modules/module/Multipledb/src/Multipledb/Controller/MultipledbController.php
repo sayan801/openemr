@@ -20,29 +20,37 @@
 namespace Multipledb\Controller;
 
 use Multipledb\Model\MultipledbData;
-use Zend\Json\Server\Exception\ErrorException;
-use Zend\Mvc\Controller\AbstractActionController;
-use Zend\View\Model\ViewModel;
+use Multipledb\Model\MultipledbTable;
+use Laminas\Json\Server\Exception\ErrorException;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
+use OpenEMR\Common\Acl\AclMain;
 use Application\Listener\Listener;
 use Error;
 
 class MultipledbController extends BaseController
 {
 
+    /**
+     * TableGateway for the Multipledb data.
+     * @var MultipledbTable
+     */
+    private $MultipledbTable;
 
     /**
      * MultipledbController constructor.
      */
-    public function __construct()
+    public function __construct(MultipledbTable $MultipledbTable)
     {
         parent::__construct();
-        $this->listenerObject = new Listener;
+        $this->MultipledbTable = $MultipledbTable;
+        $this->listenerObject = new Listener();
         //todo add permission of admin
     }
 
 
     /**
-     * @return \Zend\Stdlib\ResponseInterface the index action
+     * @return \Laminas\Stdlib\ResponseInterface the index action
      */
 
     public function indexAction()
@@ -144,12 +152,6 @@ class MultipledbController extends BaseController
      */
     private function getMultipledbTable()
     {
-
-        if (!$this->MultipledbTable) {
-            $sm = $this->getServiceLocator();
-            $this->MultipledbTable = $sm->get('Multipledb\Model\MultipledbTable');
-        }
-
         return $this->MultipledbTable;
     }
 
@@ -166,12 +168,12 @@ class MultipledbController extends BaseController
     public function checkAcl($mode = null)
     {
         if ($mode == 'view' or $mode == 'write') {
-            if (!acl_check('admin', 'multipledb', false, $mode)) {
-                $this->redirect()->toRoute("multipledb", array("action"=>"error"));
+            if (!AclMain::aclCheckCore('admin', 'multipledb', false, $mode)) {
+                $this->redirect()->toRoute("multipledb", array("action" => "error"));
             }
         } else {
-            if (!acl_check('admin', 'multipledb')) {
-                $this->redirect()->toRoute("multipledb", array("action"=>"error"));
+            if (!AclMain::aclCheckCore('admin', 'multipledb')) {
+                $this->redirect()->toRoute("multipledb", array("action" => "error"));
             }
         }
     }

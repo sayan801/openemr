@@ -1,14 +1,17 @@
 <?php
+
 /*
  * This program sets the global variables.
  *
- * @package OpenEMR
- * @author Rod Roark <rod@sunsetsystems.com>
- * @author Stephen Waite <stephen.waite@cmsvt.com>
+ * @package   OpenEMR
+ * @link      https://www.open-emr.org
+ * @author    Rod Roark <rod@sunsetsystems.com>
+ * @author    Stephen Waite <stephen.waite@cmsvt.com>
+ * @author    Brady Miller <brady.g.miller@gmail.com>
  * @copyright Copyright (c) 2015 Rod Roark <rod@sunsetsystems.com>
  * @copyright Copyright (c) 2018 Stephen Waite <stephen.waite@cmsvt.com>
- * @link https://github.com/openemr/openemr/tree/master
- * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
+ * @copyright Copyright (c) 2019 Brady Miller <brady.g.miller@gmail.com>
+ * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 // $GLOBALS['print_command'] is the
@@ -77,6 +80,9 @@
 //   Urdu                           // xl('Urdu')
 //   Vietnamese                     // xl('Vietnamese')
 
+use OpenEMR\Services\Globals\GlobalsService;
+use OpenEMR\Events\Globals\GlobalsInitializedEvent;
+
 // OS-dependent stuff.
 if (stristr(PHP_OS, 'WIN')) {
     // MS Windows
@@ -112,10 +118,11 @@ $USER_SPECIFIC_TABS = array('Appearance',
     'Connectors');
 $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'default_second_tab',
-    'new_tabs_layout',
     'theme_tabs_layout',
     'css_header',
+    'vertical_responsive_menu',
     'menu_styling_vertical',
+    'search_any_patient',
     'default_encounter_view',
     'gbl_pt_list_page_size',
     'gbl_pt_list_new_window',
@@ -124,6 +131,7 @@ $USER_SPECIFIC_GLOBALS = array('default_top_pane',
     'date_display_format',
     'time_display_format',
     'enable_help',
+    'text_templates_enabled',
     'posting_adj_disable',
     'messages_due_date',
     'expand_form',
@@ -176,6 +184,7 @@ $GLOBALS_METADATA = array(
         'default_second_tab' => array(
             xl('Default Second Tab'),       // descriptive name
             array(
+                '' => xl('None'),
                 '../../interface/main/messages/messages.php?form_active=1' => xl('Messages Screen'),
                 'main_info.php' => xl('Calendar Screen'),
                 '../new/new.php' => xl('Patient Search/Add Screen'),
@@ -186,69 +195,72 @@ $GLOBALS_METADATA = array(
             xl('Default Second Tab')
         ),
 
-        'new_tabs_layout' => array(
-            xl('Layout (need to logout/login after change this setting)'),
-            array(
-                '0' => xl('Frame'),
-                '1' => xl('Tabs'),
-            ),
-            '1',
-            xl('Choose the layout (need to logout and then login to see this new setting).')
-        ),
-
         'theme_tabs_layout' => array(
-            xl('Tabs Layout Theme (need to logout/login after change this setting)'),
+            xl('Tabs Layout Theme') . '*',
             'tabs_css',
             'tabs_style_full.css',
-            xl('Theme of the tabs layout (need to logout and then login to see this new setting). Note this is only applicable if use the Light or Manila general theme below.')
+            xl('Theme of the tabs layout (need to logout and then login to see this new setting).')
         ),
 
         'css_header' => array(
-            xl('General Theme (need to logout/login after change this setting)'),
+            // Note: Do not change this as it is only for theme defaults and adding themes here does nothing
+            xl('General Theme') . '*',
             'css',
             'style_light.css',
-            xl('Pick a general theme (need to logout/login after change this setting).')
+            xl('Pick a general theme (need to logout/login after changing this setting).')
         ),
 
         'font-family' => array(
-            xl('Default font (need to logout/login after change this setting)'),
+            xl('Default font') . '*',
             array(
                 '__default__' => 'Use Theme Font',
-                'Arial, Helvetica, sans-serif' => "Arial",
-                '"Arial Black", Gadget, sans-serif' => "Arial Black",
-                'Impact, Charcoal, sans-serif' => "Impact",
+                '"Arial", "Helvetica", sans-serif' => "Arial",
+                '"Arial Black", "Gadget", sans-serif' => "Arial Black",
+                '"Impact", "Charcoal", sans-serif' => "Impact",
                 '"Lucida Sans Unicode", "Lucida Grande", sans-serif' => "Lucida Sans",
-                'Tahoma, Geneva, sans-serif' => "Tahoma",
-                '"Trebuchet MS", Helvetica, sans-serif' => "Trebuchet MS",
-                'Verdana, Geneva, sans-serif' => "Verdana",
-                'lato' => "Lato",
+                '"Tahoma", "Geneva", sans-serif' => "Tahoma",
+                '"Trebuchet MS", "Helvetica", sans-serif' => "Trebuchet MS",
+                '"Verdana", "Geneva", sans-serif' => "Verdana",
+                '"Lato", sans-serif' => "Lato",
             ),
             '__default__',
-            xl('Select the default font'),
+            xl('Select the default font (need to logout/login after changing this setting).'),
         ),
 
         'font-size' => array(
-            xl('Default font size (need to logout/login after change this setting)'),
+            xl('Default font size') . '*',
             array(
                 '__default__' => 'Use Theme Font Size',
-                '10px' => '10px',
-                '12px' => '12px',
-                '14px' => '14px',
-                '16px' => '16px',
-                '18px' => '18px',
+                '0.625rem' => '10px',
+                '0.75rem' => '12px',
+                '0.875rem' => '14px',
+                '1rem' => '16px',
+                '1.125rem' => '18px',
             ),
             '__default__',
-            xl("Select the default font size"),
+            xl("Select the default font size (need to logout/login after changing this setting)."),
         ),
 
         'menu_styling_vertical' => array(
-            xl('Vertical Menu Style'),
+            xl('Vertical Menu Style for Frames'),
             array(
                 '0' => xl('Tree'),
                 '1' => xl('Sliding'),
             ),
             '1',
-            xl('Vertical Menu Style')
+            xl('Vertical Menu Style for frame based layouts')
+        ),
+
+        'search_any_patient' => array(
+            xl('Search Patient By Any Demographics'),
+            array(
+                'dual' => xl('Dual'),
+                'comprehensive' => xl('Comprehensive'),
+                'fixed' => xl('Fixed'),
+                'none' => xl('None'),
+            ),
+            'dual', // default
+            xl('Search Patient By Any Demographics, Dual additionally lets direct access to Patient Finder, Comprehensive has collapsed input box, Fixed is similar to Dual with fixed size, None is do not show')
         ),
 
         'default_encounter_view' => array(
@@ -262,10 +274,10 @@ $GLOBALS_METADATA = array(
         ),
 
         'gbl_nav_area_width' => array(
-            xl('Navigation Area Width'),
+            xl('Navigation Area Width for Frames'),
             'num',
             '175',
-            xl('Width in pixels of the left navigation frame.')
+            xl('Width in pixels of the left navigation frame in frame based layout.')
         ),
 
         'openemr_name' => array(
@@ -329,13 +341,6 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '1',                              // default = true
             xl('Navigation area includes encounter forms')
-        ),
-
-        'simplified_demographics' => array(
-            xl('Simplified Demographics'),
-            'bool',                           // data type
-            '0',                              // default = false
-            xl('Omit insurance and some other things from the demographics form')
         ),
 
         'simplified_prescriptions' => array(
@@ -451,21 +456,6 @@ $GLOBALS_METADATA = array(
             xl('Special treatment for the Vitals form')
         ),
 
-        'insurance_information' => array(
-            xl('Show Additional Insurance Information'),               // descriptive name
-            array(
-                '0' => xl('None'),
-                '1' => xl('Address Only'),
-                '2' => xl('Address and Postal Code'),
-                '3' => xl('Address and State'),
-                '4' => xl('Address, State and Postal Code'),
-                '5' => xl('Address, City, State and Postal Code'),
-                '6' => xl('Postal Code and Box Number')
-            ),
-            '5',                              // default
-            xl('Show Insurance Address Information in the Insurance Panel of Demographics.')
-        ),
-
         'gb_how_sort_list' => array(
             xl('How to sort a drop-lists'),
             array(
@@ -502,6 +492,17 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '0',                              // default = false
             xl('Show Mini Logo 2')
+        ),
+
+        'prevent_browser_refresh' => array(
+            xl('Prevent Web Browser Refresh') . '*',
+            array(
+                '0' => xl('Do not warn or prevent web browser refresh'),
+                '1' => xl('Warn, but do not prevent web browser refresh'),
+                '2' => xl('Warn and prevent web browser refresh')
+            ),
+            '2',                              // default = true
+            xl('Recommended setting is warn and prevent web browser refresh. Only use other settings if needed and use at own risk.')
         ),
 
     ),
@@ -747,11 +748,11 @@ $GLOBALS_METADATA = array(
             xl('Define a default visit category'),
         ),
 
-        'disable_eligibility_log' => array(
-            xl('Disable Insurance Eligibility Reports Download'),
+        'enable_follow_up_encounters' => array(
+            xl('Enable follow-up encounters'),
             'bool',
             '0',
-            xl('Do not allow insurance eligibility report log download')
+            xl('Enable follow-up encounters feature')
         ),
 
         'disable_chart_tracker' => array(
@@ -773,6 +774,13 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '0',                              // default = false
             xl('Removes support for prescriptions')
+        ),
+
+        'text_templates_enabled' => array(
+            xl('Enable Text Templates in Encounter Forms'),
+            'bool',                           // data type
+            '0',                              // default = false
+            xl('Allow Double Click to select Nation Note text template from any encounter form text area')
         ),
 
         'omit_employers' => array(
@@ -912,7 +920,7 @@ $GLOBALS_METADATA = array(
             xl('Enable Encryption of Items Stored on Drive'),
             'bool',                           // data type
             '1',                              // default = true
-            xl('This will enable enable encryption of items that are stored on the drive.')
+            xl('This will enable encryption of items that are stored on the drive.')
         ),
 
         'hide_document_encryption' => array(
@@ -973,7 +981,8 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '0',                              // default false
             xl('Open all expandable forms in expanded state')
-        )
+        ),
+
     ),
     // Report Tab
     //
@@ -1348,12 +1357,27 @@ $GLOBALS_METADATA = array(
             '',
             xl('Text for fifth account message.')
         ),
+
         'save_codes_history' => array(
             xl('Save codes history'),
             'bool',                           // data type
             '1',                              // default
             xl('Save codes history')
         ),
+
+        'update_mbi' => array(
+            xl('Update policy number from ERA'),
+            'bool',                           // data type
+            '0',                              // default
+            xl('Update policy number from ERA')
+        ),
+
+        'enable_percent_pricing' => array(
+            xl('Enable percent-based price levels'),
+            'bool',                           // data type
+            '0',                              // default
+            xl('Enable percent-based price levels')
+        )
     ),
 
     // E-Sign Tab
@@ -1605,13 +1629,6 @@ $GLOBALS_METADATA = array(
             xl('Number of Excluded Appointments to display in the Tooltip')
         ),
 
-        'patient_portal_appt_display_num' => array(
-            xl('Appointments - Onsite Patient Portal - Number to Display'),
-            'num',
-            '20',
-            xl('Number of Appointments to display in the Onsite Patient Portal')
-        ),
-
         'appt_display_sets_option' => array(
             xl('Appointment Display Sets - Ignore Display Limit (Last Set)'),
             'bool',                           // data type
@@ -1737,7 +1754,7 @@ $GLOBALS_METADATA = array(
             xl('This Allows a Date Range to be Selected in Patient Flow Board.')
         ),
 
-        'ptkr_start_date'=> array(
+        'ptkr_start_date' => array(
             xl('Flow Board: Default Starting Date'),
             array(
                 'D0' => xl('Current Day'),
@@ -1817,7 +1834,51 @@ $GLOBALS_METADATA = array(
 
 
     ),
+    // Insurance Tab
+    'Insurance' => array(
+        'enable_oa' => array(
+            xl('Enable Office Ally Insurance Eligibility'),
+            'bool',
+            '0',
+            xl('Allow insurance eligibility checks using Office Ally')
+        ),
 
+        'simplified_demographics' => array(
+            xl('Simplified Demographics'),
+            'bool',                           // data type
+            '0',                              // default = false
+            xl('Omit insurance and some other things from the demographics form')
+        ),
+
+        'insurance_information' => array(
+            xl('Show Additional Insurance Information'),               // descriptive name
+            array(
+                '0' => xl('None'),
+                '1' => xl('Address Only'),
+                '2' => xl('Address and Postal Code'),
+                '3' => xl('Address and State'),
+                '4' => xl('Address, State and Postal Code'),
+                '5' => xl('Address, City, State and Postal Code'),
+                '6' => xl('Postal Code and Box Number')
+            ),
+            '5',                              // default
+            xl('Show Insurance Address Information in the Insurance Panel of Demographics.')
+        ),
+
+        'disable_eligibility_log' => array(
+            xl('Disable Insurance Eligibility Reports Download'),
+            'bool',
+            '0',
+            xl('Do not allow insurance eligibility report log download')
+        ),
+
+        'insurance_only_one' => array(
+            xl('Allow only one insurance'),
+            'bool',                           // data type
+            '0',                              // default = false
+            xl('Allow more than one insurance')
+        ),
+    ),
     // Security Tab
     //
     'Security' => array(
@@ -1842,34 +1903,69 @@ $GLOBALS_METADATA = array(
         'secure_password' => array(
             xl('Require Strong Passwords'),
             'bool',                           // data type
-            '0',                              // default
-            xl('Strong password means at least 8 characters, and at least three of: a number, a lowercase letter, an uppercase letter, a special character.')
+            '1',                              // default
+            xl('Strong password means at least one of each: a number, a lowercase letter, an uppercase letter, a special character.')
         ),
+
+        'gbl_minimum_password_length' => array(
+            xl('Minimum Password Length'),
+            array(
+                '0' => xl('No Minimum'),
+                '4' => '4',
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            '9',                              // default
+            xl('Minimum length of password.')
+        ),
+
         'password_history' => array(
             xl('Require Unique Passwords'),
-            'bool',                           // data type
-            '0',                              // default
-            xl('Means none of last three passwords are allowed when changing a password.')
-        ),
-        'password_compatibility' => array(
-            xl('Permit unsalted passwords'),
-            'bool',                           // data type
-            '1',                              // default
-            xl('After migration from the old password mechanisms where passwords are stored in the users table without salt is complete, this flag should be set to false so that only authentication by the new method is possible')
+            array(
+                '0' => xl('No'),
+                '1' => '1',
+                '2' => '2',
+                '3' => '3',
+                '4' => '4',
+                '5' => '5',
+            ),
+            '5',                              // default
+            xl('Set to the number of prior passwords that are not allowed to use when changing a password.')
         ),
 
         'password_expiration_days' => array(
             xl('Default Password Expiration Days'),
             'num',                            // data type
-            '0',                              // default
+            '180',                            // default
             xl('Default password expiration period in days. 0 means this feature is disabled.')
         ),
 
         'password_grace_time' => array(
             xl('Password Expiration Grace Period'),
             'num',                            // data type
-            '0',                              // default
+            '30',                             // default
             xl('Period in days where a user may login with an expired password.')
+        ),
+
+        'password_max_failed_logins' => array(
+            xl('Maximum Failed Login Attempts'),
+            'num',                            // data type
+            '0',                              // default
+            xl('Maximum Failed Login Attempts (0 for no maximum).')
         ),
 
         'is_client_ssl_enabled' => array(
@@ -1928,34 +2024,271 @@ $GLOBALS_METADATA = array(
             xl('Key for multiple database credentials encryption')
         ),
 
-        'use_active_directory' => array(
-            xl('Use Active Directory'),
+        'gbl_ldap_enabled' => array(
+            xl('Use LDAP for Authentication'),
             'bool',
             '0',
-            xl('If enabled, uses the specified active directory for login and authentication.')
+            xl('If enabled, use LDAP for login and authentication.')
         ),
-
-        'account_suffix' => array(
-            xl('Active Directory - Suffix Of Account'),
+        'gbl_ldap_host' => array(
+            xl('LDAP - Server Name or URI'),
             'text',
             '',
-            xl('The suffix of the account.')
+            xl('The hostname or URI of your LDAP or Active Directory server.')
         ),
-
-        'base_dn' => array(
-            xl('Active Directory - Domains Base'),
+        'gbl_ldap_dn' => array(
+            xl('LDAP - Distinguished Name of User'),
             'text',
             '',
-            xl('Users is the standard windows CN, replace the DC stuff with your domain.')
+            xl('Embed {login} where the OpenEMR login name of the user is to be; for example: uid={login},dc=example,dc=com')
         ),
-
-        'domain_controllers' => array(
-            xl('Active Directory - Domains Controllers'),
+        'gbl_ldap_exclusions' => array(
+            xl('LDAP - Login Exclusions'),
             'text',
             '',
-            xl('The IP address of your domain controller(s).')
+            xl('Comma-separated list of login names to use normal authentication instead of LDAP; useful for setup and debugging.')
         ),
 
+        'gbl_debug_hash_verify_execution_time' => array(
+            xl('Debug Hash Verification Time'),
+            'bool',
+            '0',
+            xl('If enabled, this will send the execution time it took to verify hash to the php error log.')
+        ),
+
+        'gbl_auth_hash_algo' => array(
+            xl('Hash Algorithm for Authentication'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                'BCRYPT' => xl('Bcrypt'),
+                'ARGON2I' => xl('Argon2I') . ' (PHP 7.3 or greater)',
+                'ARGON2ID' => xl('Argon2ID') . ' (PHP 7.3 or greater)',
+            ),
+            'DEFAULT',                // default
+            xl('Hashing algorithm for authentication. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_auth_bcrypt_hash_cost' => array(
+            xl('Authentication Token Bcrypt Hash Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Authentication bcrypt hash cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_auth_argon_hash_memory_cost' => array(
+            xl('Authentication Argon Hash Memory Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '512' => '512',
+                '1024' => '1024',
+                '2048' => '2048',
+                '4096' => '4096',
+                '8192' => '8192',
+                '16384' => '16384',
+                '32768' => '32768',
+                '65536' => '65536',
+                '131072' => '131072',
+                '262144' => '262144',
+                '524288' => '524288',
+                '1048576' => '1048576',
+                '2097152' => '2097152',
+            ),
+            'DEFAULT',                // default
+            xl('Authentication argon hash memory cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_auth_argon_hash_time_cost' => array(
+            xl('Authentication Argon Hash Time Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '1' => '1',
+                '2' => '2',
+                '3' => '3',
+                '4' => '4',
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Authentication argon hash time cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_auth_argon_hash_thread_cost' => array(
+            xl('Authentication Argon Hash Thread Number'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '1' => '1',
+                '2' => '2',
+                '3' => '3',
+                '4' => '4',
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Authentication argon hash thread number. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_token_hash_algo' => array(
+            xl('Hash Algorithm for Token'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                'BCRYPT' => xl('Bcrypt'),
+                'ARGON2I' => xl('Argon2I') . ' (PHP 7.3 or greater)',
+                'ARGON2ID' => xl('Argon2ID') . ' (PHP 7.3 or greater)',
+            ),
+            'DEFAULT',                // default
+            xl('Hashing algorithm for token. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_token_bcrypt_hash_cost' => array(
+            xl('Token Bcrypt Hash Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Token bcrypt hash cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_token_argon_hash_memory_cost' => array(
+            xl('Token Argon Hash Memory Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '512' => '512',
+                '1024' => '1024',
+                '2048' => '2048',
+                '4096' => '4096',
+                '8192' => '8192',
+                '16384' => '16384',
+                '32768' => '32768',
+                '65536' => '65536',
+                '131072' => '131072',
+                '262144' => '262144',
+                '524288' => '524288',
+                '1048576' => '1048576',
+                '2097152' => '2097152',
+            ),
+            'DEFAULT',                // default
+            xl('Token argon hash memory cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_token_argon_hash_time_cost' => array(
+            xl('Token Argon Hash Time Cost'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '1' => '1',
+                '2' => '2',
+                '3' => '3',
+                '4' => '4',
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Token argon hash time cost. Suggest PHP Default unless you know what you are doing.')
+        ),
+
+        'gbl_token_argon_hash_thread_cost' => array(
+            xl('Token Argon Hash Thread Number'),
+            array(
+                'DEFAULT' => xl('PHP Default'),
+                '1' => '1',
+                '2' => '2',
+                '3' => '3',
+                '4' => '4',
+                '5' => '5',
+                '6' => '6',
+                '7' => '7',
+                '8' => '8',
+                '9' => '9',
+                '10' => '10',
+                '11' => '11',
+                '12' => '12',
+                '13' => '13',
+                '14' => '14',
+                '15' => '15',
+                '16' => '16',
+                '17' => '17',
+                '18' => '18',
+                '19' => '19',
+                '20' => '20',
+            ),
+            'DEFAULT',                // default
+            xl('Token argon hash thread number. Suggest PHP Default unless you know what you are doing.')
+        ),
     ),
 
     // Notifications Tab
@@ -2343,6 +2676,13 @@ $GLOBALS_METADATA = array(
             xl('Enable logging of CDR Engine Queries.') . ' (' . xl('Note that Audit Logging needs to be enabled above') . ')'
         ),
 
+        'gbl_force_log_breakglass' => array(
+            xl('Audit all Emergency User Queries'),
+            'bool',                           // data type
+            '1',                              // default
+            xl('Force logging of all Emergency User (ie. breakglass) activities.')
+        ),
+
         'enable_atna_audit' => array(
             xl('Enable ATNA Auditing'),
             'bool',                           // data type
@@ -2552,6 +2892,13 @@ $GLOBALS_METADATA = array(
             '/mnt/scan_docs',                 // default
             xl('Location where scans are stored.')
         ),
+
+        'unique_installation_id' => array(
+            xl('Unique Installation ID'),
+            'if_empty_create_random_uuid',    // data type
+            '',                 // default
+            xl('Unique installation ID. Creates a random UUID if empty.')
+        ),
     ),
 
     // Portal Tab
@@ -2559,17 +2906,17 @@ $GLOBALS_METADATA = array(
     'Portal' => array(
 
         'portal_onsite_two_enable' => array(
-            xl('Enable Version 2 Onsite Patient Portal'),
+            xl('Enable Onsite Patient Portal'),
             'bool',                           // data type
             '0',
-            xl('Enable Version 2 Onsite Patient Portal')
+            xl('Enable Onsite Patient Portal')
         ),
 
         'portal_onsite_two_address' => array(
-            xl('Version 2 Onsite Patient Portal Site Address'),
+            xl('Onsite Patient Portal Site Address'),
             'text',                           // data type
             'https://your_web_site.com/openemr/portal',
-            xl('Website link for the Version 2 Onsite Patient Portal.')
+            xl('Website link for the Onsite Patient Portal.')
         ),
 
         'portal_onsite_two_basepath' => array(
@@ -2587,42 +2934,42 @@ $GLOBALS_METADATA = array(
         ),
 
         'portal_onsite_two_register' => array(
-            xl('Allow Version 2 Onsite New Patient Registration Widget'),
+            xl('Allow Onsite New Patient Registration Widget'),
             'bool',                           // data type
             '1',
-            xl('Enable Version 2 Onsite Patient Portal new patient to self register.')
+            xl('Enable Onsite Patient Portal new patient to self register.')
         ),
 
         'allow_portal_appointments' => array(
-            xl('Allow Version 2 Onsite Online Appointments'),
+            xl('Allow Onsite Online Appointments'),
             'bool',                           // data type
             '1',
-            xl('Allow Version 2 Onsite Patient to make and view appointments online.')
+            xl('Allow Onsite Patient to make and view appointments online.')
         ),
 
         'allow_portal_chat' => array(
-            xl('Allow Version 2 Onsite Online Secure Chat'),
+            xl('Allow Onsite Online Secure Chat'),
             'bool',                           // data type
             '1',
-            xl('Allow Version 2 Onsite Patient to use Secure Chat Application.')
+            xl('Allow Onsite Patient to use Secure Chat Application.')
         ),
 
         'portal_two_ledger' => array(
-            xl('Allow Version 2 Onsite Patient Ledger'),
+            xl('Allow Onsite Patient Ledger'),
             'bool',                           // data type
             '1',
-            xl('Allow Version 2 Onsite Patient to view their accounting ledger online.')
+            xl('Allow Onsite Patient to view their accounting ledger online.')
         ),
 
         'portal_two_payments' => array(
-            xl('Allow Version 2 Onsite Online Payments'),
+            xl('Allow Onsite Online Payments'),
             'bool',                           // data type
             '0',
-            xl('Allow Version 2 Onsite Patient to make payments online.')
+            xl('Allow Onsite Patient to make payments online.')
         ),
 
         'portal_two_pass_reset' => array(
-            xl('Allow Version 2 Patients to Reset Credentials'),
+            xl('Allow Onsite Patients to Reset Credentials'),
             'bool',                           // data type
             '0',
             xl('Patient may change their logon from portal login dialog.')
@@ -2633,20 +2980,6 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '1',
             xl('Enables the ability to download documents in the Onsite Patient Portal by the user.')
-        ),
-
-        'portal_onsite_enable' => array(
-            xl('Enable Version 1 Onsite Patient Portal'),
-            'bool',                           // data type
-            '0',
-            xl('Enable Version 1 Onsite Patient Portal')
-        ),
-
-        'portal_onsite_address' => array(
-            xl('Version 1 Onsite Patient Portal Site Address'),
-            'text',                           // data type
-            'https://your_web_site.com/openemr/patients',
-            xl('Website link for the Version 1 Onsite Patient Portal.')
         ),
 
         'portal_offsite_enable' => array(
@@ -2730,9 +3063,9 @@ $GLOBALS_METADATA = array(
         'fhir_enable' => array(
             xl('Enable FHIR Provider Client Service'),
             array(
-                0 => xl('Off: No Service.'),
-                1 => xl('On: HAPI FHIR.'),
-                2 => xl('On: Smart on FHIR.'),
+                0 => xl('Disabled'),
+                1 => xl('HAPI FHIR'),
+                2 => xl('Smart on FHIR'),
             ),
             '0',
             xl('Enable FHIR Provider Client Service')
@@ -2750,13 +3083,6 @@ $GLOBALS_METADATA = array(
             'bool',
             '0',
             xl('Enable OpenEMR RESTful API. SSL Required')
-        ),
-
-        'enable_oa' => array(
-            xl('Enable Office Ally Insurance Eligibility'),
-            'bool',
-            '0',
-            xl('Allow insurance eligibility checks using Office Ally')
         ),
 
         'payment_gateway' => array(
@@ -2788,7 +3114,7 @@ $GLOBALS_METADATA = array(
             xl('Gateway API Login Auth Name or Secret'),
             'encrypted',
             '',
-            xl('The Auth Name or API key for selected account.Auth Name for Authorize.Net and API Secret for Stripe')
+            xl('The Auth Name or API key for selected account. Auth Name for Authorize.Net and API Secret for Stripe.')
         ),
 
         'gateway_transaction_key' => array(
@@ -3015,7 +3341,35 @@ $GLOBALS_METADATA = array(
             'bool',                           // data type
             '0',
             xl('phiMail Allow CCR Send')
-        )
+        ),
+
+        'easipro_enable' => array(
+            xl('Enable Easipro'),
+            'bool',                           // data type
+            '0',
+            xl('Enable Easipro. For licensing options for this feature, please contact') . ' api@assessmentcenter.net'
+        ),
+
+        'easipro_server' => array(
+            xl('Easipro Server'),
+            'text',                           // data type
+            '',
+            xl('Easipro Server')
+        ),
+
+        'easipro_name' => array(
+            xl('Easipro Server Username'),
+            'text',                           // data type
+            '',
+            xl('Easipro Server Username')
+        ),
+
+        'easipro_pass' => array(
+            xl('Easipro Server Password'),
+            'encrypted',                      // data type
+            '',
+            xl('Easipro Server Password')
+        ),
     ),
 
     'Rx' => array(
@@ -3539,3 +3893,9 @@ $GLOBALS_METADATA = array(
 
     ),
 );
+
+if (!$skipGlobalEvent) {
+    $globalsInitEvent = new GlobalsInitializedEvent(new GlobalsService($GLOBALS_METADATA, $USER_SPECIFIC_GLOBALS, $USER_SPECIFIC_TABS));
+    $globalsInitEvent = $GLOBALS["kernel"]->getEventDispatcher()->dispatch(GlobalsInitializedEvent::EVENT_HANDLE, $globalsInitEvent, 10);
+    $globalsService = $globalsInitEvent->getGlobalsService()->save();
+}

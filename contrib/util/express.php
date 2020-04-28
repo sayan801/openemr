@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Generated DocBlock
  *
@@ -16,6 +17,7 @@
  * @copyright Copyright (c) 2011 cornfeed <jdough823@gmail.com>
  * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 ?>
 <html>
 <head>
@@ -31,7 +33,7 @@
 exit;
 
 if (!$_POST['submit']) {
-?>
+    ?>
 <form method=post>
 <p>
 This script will take the name that you give and create an OpenEMR database with this as the database name, username, password, group name.  It will also rename the directory this OpenEMR installation is under to the new name.  THIS ONLY WORKS WITH XAMPP AND HAS VERY LIMITED TESTING.
@@ -45,8 +47,8 @@ Enter the name you wish to use for this OpenEMR installation.
 <input type=text name=newname>
 <input type=submit name=submit value=submit>
 </form>
-<?php
-exit(0);
+    <?php
+    exit(0);
 }
 
 if ($_POST['submit']) {
@@ -76,31 +78,31 @@ if ($_POST['submit']) {
 
     if ($dbh == false) {
         echo "ERROR.  Check your login credentials.\n";
-        echo "<p>".mysql_error()." (#".mysql_errno().")\n";
-        break;
+        echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
+        exit;
     } else {
-        echo "OK.<br>\n";
+        echo "OK.<br />\n";
     }
 
     echo "Creating database...\n";
     flush();
     if (mysql_query("create database $dbname", $dbh) == false) {
         echo "ERROR.  Check your login credentials.\n";
-        echo "<p>".mysql_error()." (#".mysql_errno().")\n";
-        break;
+        echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
+        exit;
     } else {
-        echo "OK.<br>\n";
+        echo "OK.<br />\n";
     }
 
     echo "Creating user with permissions for database...\n";
     flush();
     if (mysql_query("GRANT ALL PRIVILEGES ON $dbname.* TO '$login'@'$loginhost' IDENTIFIED BY '$pass'", $dbh) == false) {
         echo "ERROR when granting privileges to the specified user.\n";
-        echo "<p>".mysql_error()." (#".mysql_errno().")\n";
+        echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
         echo "ERROR.\n";
-        break;
+        exit;
     } else {
-        echo "OK.<br>\n";
+        echo "OK.<br />\n";
     }
 
     echo "Reconnecting as new user...\n";
@@ -117,20 +119,20 @@ if ($server == "localhost") {
 
 if ($dbh == false) {
     echo "ERROR.  Check your login credentials.\n";
-    echo "<p>".mysql_error()." (#".mysql_errno().")\n";
-    break;
+    echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
+    exit;
 } else {
-    echo "OK.<br>\n";
+    echo "OK.<br />\n";
 }
 
 echo "Opening database...";
 flush();
 if (mysql_select_db("$dbname", $dbh) == false) {
     echo "ERROR.  Check your login credentials.\n";
-    echo "<p>".mysql_error()." (#".mysql_errno().")\n";
-    break;
+    echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
+    exit;
 } else {
-    echo "OK.<br>\n";
+    echo "OK.<br />\n";
 }
 
     flush();
@@ -142,7 +144,7 @@ if ($upgrade != 1) {
     if ($fd == false) {
         echo "ERROR.  Could not open dumpfile '$dumpfile'.\n";
         flush();
-        break;
+        exit;
     }
 
     $query = "";
@@ -162,8 +164,8 @@ if ($upgrade != 1) {
             continue;
         }
 
-        $query = $query.$line;      // Check for full query
-        $chr = substr($query, strlen($query)-1, 1);
+        $query = $query . $line;      // Check for full query
+        $chr = substr($query, strlen($query) - 1, 1);
         if ($chr == ";") { // valid query, execute
             $query = rtrim($query, ";");
             mysql_query("$query", $dbh);
@@ -171,7 +173,7 @@ if ($upgrade != 1) {
         }
     }
 
-    echo "OK<br>\n";
+    echo "OK<br />\n";
     fclose($fd);
     flush();
     echo "Adding Initial User...\n";
@@ -179,23 +181,23 @@ if ($upgrade != 1) {
     $iuser = "admin";
     $iuname = "admin";
     $igroup = $newname;
-    //echo "INSERT INTO `groups` VALUES (1,'$igroup','$iuser')<br>\n";
+    //echo "INSERT INTO `groups` VALUES (1,'$igroup','$iuser')<br />\n";
     if (mysql_query("INSERT INTO `groups` (id, name, user) VALUES (1,'$igroup','$iuser')") == false) {
         echo "ERROR.  Could not run queries.\n";
-        echo "<p>".mysql_error()." (#".mysql_errno().")\n";
+        echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
         flush();
-        break;
+        exit;
     }
 
     //// ViCareplus : As per NIST standard, SHA1 hash/digest of 'pass' is used
     if (mysql_query("INSERT INTO users (id, username, password, authorized, lname,fname) VALUES (1,'$iuser','9d4e1e23bd5b727046a9e3b4b7db57bd8d6ee684',1,'$iuname','')") == false) {
         echo "ERROR.  Could not run queries.\n";
-        echo "<p>".mysql_error()." (#".mysql_errno().")\n";
+        echo "<p>" . mysql_error() . " (#" . mysql_errno() . ")\n";
         flush();
-        break;
+        exit;
     }
 
-    echo "OK<br>\n";
+    echo "OK<br />\n";
     flush();
 
     //Now write sqlconf file
@@ -205,7 +207,7 @@ if ($upgrade != 1) {
     if ($fd == false) {
         echo "ERROR.  Could not open config file '$conffile' for writing.\n";
         flush();
-        break;
+        exit;
     }
 
     $string = "<?php\n\n//  OpenEMR\n//  MySQL Config\n//  Referenced from sql.inc\n\n";
@@ -243,9 +245,9 @@ if ($upgrade != 1) {
 
     //it's rather irresponsible to not report errors when writing this file.
     if ($it_died != 0) {
-            echo "ERROR. Couldn't write $it_died lines to config file '$conffile'.\n";
-            flush();
-            break;
+        echo "ERROR. Couldn't write $it_died lines to config file '$conffile'.\n";
+        flush();
+        exit;
     }
 
     fclose($fd);
@@ -253,20 +255,20 @@ if ($upgrade != 1) {
     //Now, use new name and fix globals.php and rename directory!!!
     $d = getcwd();
     $dn = dirname($d);
-    $contents = file_get_contents($d.'/interface/globals.php');
+    $contents = file_get_contents($d . '/interface/globals.php');
     $contents = preg_replace(
         '/\$webserver_root\s+=\s+[\"\'].*?[\"\'];/',
-        "\$webserver_root = '".$dn."/".$newname."';",
+        "\$webserver_root = '" . $dn . "/" . $newname . "';",
         $contents
     );
     $contents = preg_replace(
         '/\$web_root\s+=\s+[\"\'].*?[\"\'];/',
-        "\$web_root = '/".$newname."';",
+        "\$web_root = '/" . $newname . "';",
         $contents
     );
-    file_put_contents($d.'/interface/globals.php', $contents);
-    if (rename($d, $dn.'/'.$newname)) {
-        echo "<br/><a href='http://localhost/".$newname."'>click here</a>";
+    file_put_contents($d . '/interface/globals.php', $contents);
+    if (rename($d, $dn . '/' . $newname)) {
+        echo "<br/><a href='http://localhost/" . $newname . "'>click here</a>";
     }
 }
 ?>

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Adding thumbnails to all files
  *
@@ -84,9 +85,6 @@ class ThumbnailGenerator
                 case 1:
                     $new_file =  $this->generate_couch_file($row['couch_docid'], $row['url']);
                     break;
-                default:
-                    $this->error_log($row['url']);
-                    continue;
             }
 
             // Write error to log if failed
@@ -130,7 +128,7 @@ class ThumbnailGenerator
         $from_all = explode("/", $url);
         $from_filename = array_pop($from_all);
         $from_pathname_array = array();
-        for ($i=0; $i<$path_depth; $i++) {
+        for ($i = 0; $i < $path_depth; $i++) {
             $from_pathname_array[] = array_pop($from_all);
         }
 
@@ -217,6 +215,6 @@ class ThumbnailGenerator
     private function error_log($url)
     {
 
-        error_log('Failed to create thumbnail of ' . $url);
+        error_log('Failed to create thumbnail of ' . errorLogEscape($url));
     }
 }

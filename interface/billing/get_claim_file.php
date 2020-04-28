@@ -1,4 +1,5 @@
 <?php
+
 /**
  * get_claim_file.php
  *
@@ -9,12 +10,13 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-
 require_once(dirname(__FILE__) . "/../globals.php");
 require_once $GLOBALS['OE_SITE_DIR'] . "/config.php";
 
-if (!verifyCsrfToken($_GET["csrf_token_form"])) {
-    csrfNotVerified();
+use OpenEMR\Common\Csrf\CsrfUtils;
+
+if (!CsrfUtils::verifyCsrfToken($_GET["csrf_token_form"])) {
+    CsrfUtils::csrfNotVerified();
 }
 
 $content_type = "text/plain";
@@ -25,7 +27,7 @@ $fname = preg_replace("[/]", "", $fname);
 $fname = preg_replace("[\.\.]", "", $fname);
 $fname = preg_replace("[\\\\]", "", $fname);
 
-if (strtolower(substr($fname, (strlen($fname)-4))) == ".pdf") {
+if (strtolower(substr($fname, (strlen($fname) - 4))) == ".pdf") {
     $content_type = "application/pdf";
 }
 

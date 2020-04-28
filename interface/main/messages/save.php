@@ -1,4 +1,5 @@
 <?php
+
 /**
  * /interface/main/messages/save.php
  *
@@ -6,15 +7,16 @@
  * @link    http://www.MedExBank.com
  * @author  MedEx <support@MedExBank.com>
  * @copyright Copyright (c) 2017 MedEx <support@MedExBank.com>
- * @license https://www.gnu.org/licenses/agpl-3.0.en.html GNU Affero General Public License 3
+ * @license https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
 require_once "../../globals.php";
-require_once "$srcdir/acl.inc";
 require_once "$srcdir/lists.inc";
 require_once "$srcdir/forms.inc";
 require_once "$srcdir/patient.inc";
 require_once "$srcdir/MedEx/API.php";
+
+use OpenEMR\Common\Acl\AclMain;
 
 $MedEx = new MedExApi\MedEx('MedExBank.com');
 if ($_REQUEST['go'] == 'sms_search') {
@@ -22,19 +24,25 @@ if ($_REQUEST['go'] == 'sms_search') {
     $query = "SELECT * FROM patient_data WHERE fname LIKE ? OR lname LIKE ?";
     $result = sqlStatement($query, array($param, $param));
     while ($frow = sqlFetchArray($result)) {
-        $data['Label'] = 'Name';
-        $data['value'] = $frow['fname'] . " " . $frow['lname'];
-        $data['pid'] = $frow['pid'];
-        $data['mobile'] = $frow['phone_cell'];
-        $data['allow'] = $frow['hipaa_allowsms'];
+        $data['Label']  = 'Name';
+        $data['value']  = text($frow['fname'] . " " . $frow['lname']);
+        $data['pid']    = text($frow['pid']);
+        $data['mobile'] = text($frow['phone_cell']);
+        $data['allow']  = text($frow['hipaa_allowsms']);
+        $sql = "SELECT * FROM `medex_outgoing` where msg_pid=? ORDER BY `medex_outgoing`.`msg_uid` DESC LIMIT 1";
+        $data['sql'] = $sql;
+        $result2 = sqlQuery($sql, array($frow['pid']));
+        $data['msg_last_updated'] = $result2['msg_date'];
+        $data['medex_uid'] = $result2['medex_uid'];
         $results[] = $data;
     }
+
     echo json_encode($results);
     exit;
 }
 //you need admin privileges to update this.
 if ($_REQUEST['go'] == 'Preferences') {
-    if (acl_check('admin', 'super')) {
+    if (AclMain::aclCheckCore('admin', 'super')) {
         $sql = "UPDATE `medex_prefs` SET `ME_facilities`=?,`ME_providers`=?,`ME_hipaa_default_override`=?,
 			`PHONE_country_code`=? ,`MSGS_default_yes`=?,
 			`POSTCARDS_local`=?,`POSTCARDS_remote`=?,
@@ -62,7 +70,7 @@ if ($_REQUEST['go'] == 'Preferences') {
     exit;
 }
 if ($_REQUEST['MedEx'] == "start") {
-    if (acl_check('admin', 'super')) {
+    if (AclMain::aclCheckCore('admin', 'super')) {
         $query = "SELECT * FROM users WHERE id = ?";
         $user_data = sqlQuery($query, array($_SESSION['authUserID']));
         $query = "SELECT * FROM facility WHERE primary_business_entity='1' LIMIT 1";
@@ -119,22 +127,20 @@ if ($_REQUEST['MedEx'] == "start") {
 								PHONE_country_code,LABELS_local,LABELS_choice)
 							VALUES (?,?,?,?,?,?,?,?,?,?)";
             sqlStatement($sqlINSERT, array($response['customer_id'], $response['API_key'], $_POST['new_email'], $facilities, $providers, "1", "1", "1", "1", "5160"));
-            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='5' WHERE `name`='MedEx'");
-        }
+            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='5', `require_once`='/library/MedEx/MedEx_background.php' WHERE `name`='MedEx'");
 
-        $info = $MedEx->login('1');
+            $info = $MedEx->login('1');
 
-        if ($info['status']['token']) {
-            $info['status']['show'] = xlt("Sign-up successful for") . " " . $data['company'] . ".<br />" . xlt("Proceeding to Preferences") . ".<br />" .
-                xlt("If this page does not refresh, reload the Messages page manually") . ".<br />";
-            //get js to reroute user to preferences.
-            echo json_encode($info['status']);
-            sqlQuery("UPDATE `background_services` SET `active`='1',`execute_interval`='29' WHERE `name`='MedEx'");
+            if ($info['token']) {
+                $info['show'] = xlt("Sign-up successful for") . " " . $data['company'] . ".<br />" . xlt("Proceeding to Preferences") . ".<br />" . xlt("If this page does not refresh, reload the Messages page manually") . ".<br />";
+                //get js to reroute user to preferences.
+                echo json_encode($info);
+            }
         } else {
             $response_prob = array();
             $response_prob['show'] = xlt("We ran into some problems connecting your EHR to the MedEx servers") . ".<br >
-				" .xlt('Most often this is due to a Username/Password mismatch')."<br />"
-                .xlt('Run Setup again or contact support for assistance').
+				" . xlt('Most often this is due to a Username/Password mismatch') . "<br />"
+                . xlt('Run Setup again or contact support for assistance') .
                 " <a href='https://medexbank.com/cart/upload/'>MedEx Bank</a>.<br />";
             echo json_encode($response_prob);
             sqlQuery("UPDATE `background_services` SET `active`='0' WHERE `name`='MedEx'");
@@ -155,13 +161,13 @@ if (($_REQUEST['pid']) && ($_REQUEST['action'] == "new_recall")) {
      *  Did the clinician create a PLAN at the last visit?
      *  To do an in office test, and get paid for it,
      *  we must have an order (and a report of the findings).
-     *  If the practice is using the eye form then uncomment the 3 lines below.
+     *  If the practice is using the eye form then uncomment the 5 lines below.
      *  It provides the PLAN and orders for next visit.
      *  As forms mature, there should be a uniform way to find the PLAN?
      *  And when that day comes we'll put it here...
      *  The other option is to use Visit Categories here.  Maybe both?  Consensus?
      */
-    $query = "SELECT ORDER_DETAILS FROM form_eye_mag_orders WHERE PID=? AND ORDER_DATE_PLACED < NOW() ORDER BY ORDER_DATE_PLACED DESC LIMIT 1";
+    $query = "SELECT ORDER_DETAILS FROM form_eye_mag_orders WHERE pid=? AND ORDER_DATE_PLACED < NOW() ORDER BY ORDER_DATE_PLACED DESC LIMIT 1";
     $result2 = sqlQuery($query, array($_REQUEST['pid']));
     if (!empty($result2)) {
         $result['PLAN'] = $result2['ORDER_DETAILS'];

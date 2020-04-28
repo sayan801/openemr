@@ -1,4 +1,5 @@
 <?php
+
 /**
  * While creating new encounter this code is used to change the "Billing Facility:".
  * This happens on change of the "Facility:" field.
@@ -13,6 +14,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
+use OpenEMR\Common\Csrf\CsrfUtils;
 
 ?>
 <script type="text/javascript">
@@ -26,7 +28,7 @@ data: {
 pid: pid,
 date: date,
 facility: facility,
-csrf_token_form: <?php echo js_escape(collectCsrfToken()); ?>
+csrf_token_form: <?php echo js_escape(CsrfUtils::collectCsrfToken()); ?>
 },
 success: function(thedata){//alert(thedata)
 $("#ajaxdiv").html(thedata);

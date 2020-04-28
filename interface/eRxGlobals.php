@@ -1,4 +1,5 @@
 <?php
+
 /**
  * interface/eRxGlobals.php Functions for retrieving NewCrop global configurations.
  *
@@ -9,6 +10,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
+use OpenEMR\Common\Crypto\CryptoGen;
 
 class eRxGlobals
 {
@@ -136,7 +138,8 @@ class eRxGlobals
      */
     public function getAccountPassword()
     {
-        return decryptStandard($this->getGlobalValue('erx_account_password'));
+        $cryptoGen = new CryptoGen();
+        return $cryptoGen->decryptStandard($this->getGlobalValue('erx_account_password'));
     }
 
     /**

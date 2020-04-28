@@ -1,4 +1,5 @@
 <?php
+
 // Copyright (C) 2010-2011 Rod Roark <rod@sunsetsystems.com>
 //
 // This program is free software; you can redistribute it and/or
@@ -19,7 +20,7 @@ function LBFathbf_javascript()
 
   // Compute patient age and sex.
     $ptrow = sqlQuery("SELECT DOB, sex FROM patient_data WHERE " .
-    "pid = '$pid' LIMIT 1");
+    "pid = ? LIMIT 1", [$pid]);
     $pt_age = 0 + getpatientAge($ptrow['DOB']);
     $pt_sex = strtoupper(substr($ptrow['sex'], 0, 1)) == 'F' ? 1 : 0;
 
